@@ -9,10 +9,12 @@ The LLM output obj `LlmParsed` is declared HERE: byllm 0.6.19 crashes on an
 output obj imported from another module (CLAUDE.md §1a).
 """
 
+import sys;
 import re;
 import from time { sleep }
 import from concurrent.futures { Future }
 import from byllm.lib { RateLimitError }
+import from llm_switch { is_mock }
 import from gm_types { Hazard, Lang, Complaint, ParsedText, Event, fix_parsed }
 import from grid { GridNode, Substation, Section, Home, Landmark, Feeds, Located, ParseCache, EventLog, children, parents }
 
@@ -68,17 +70,73 @@ def landmark_section(text: str) -> str;
 """The 10-digit consumer number of a `BD <number>` SMS, or '' if the text is not one."""
 def bd_number(text: str) -> str;
 
+glob _SI_RE: any = re.compile("[඀-෿]");
+glob _TA_RE: any = re.compile("[஀-௿]");
+glob _POLE_RE: any = re.compile("(pole|kanuwa|කණුව)\\D{0,6}(\\d+)");
+glob _SINGLISH: list[str] = [
+    "naha", "na", "nathuwa", "natuwa", "widuliya", "kanuwa", "langa", "watila", "wetila",
+    "bima", "eka", "ekak", "thiyenawa", "tiyenawa", "gihin", "ape", "mage"
+];
+glob _EN_WORDS: list[str] = ["pole", "wire", "current", "power", "sparks", "road", "transformer", "light", "line"];
+glob _FIRE_WORDS: list[str] = ["fire", "flame", "ගින්න"];
+glob _SPARK_WORDS: list[str] = ["spark", "arcing", "burning smell", "ගිනි පුපුරු"];
+glob _WIRE_WORDS: list[str] = [
+    "wire fallen", "fallen wire", "wire on the road", "wire down", "wires down", "live wire",
+    "line down", "lines down", "hanging low", "tree fell", "wire eka bima", "bima watila",
+    "වයරයක් බිම", "கம்பி கீழே"
+];
+glob _NOISE_WORDS: list[str] = ["bang", "loud sound", "loud noise", "explod", "buzz", "සද්දයක්", "පිපිරුම"];
+
+def _has_any(t: str, words: list[str]) -> bool {
+    return any([w in t for w in words]);
+}
+
+"""Offline stand-in for parse_texts/parse_single: keyword rules, same fields, no Gemini.
+Picks the most serious hazard (FIRE, SPARKS, WIRE_DOWN, TRANSFORMER_NOISE) like the model does."""
+def mock_parse(text: str) -> ParsedText {
+    t: str = text.lower();
+    latin: list[str] = re.findall("[a-z]+", t);
+    has_si: bool = _SI_RE.search(text) is not None;
+    has_ta: bool = _TA_RE.search(text) is not None;
+    singlish: bool = any([w in _SINGLISH for w in latin]);
+    english: bool = any([w in _EN_WORDS for w in latin]);
+    lang: Lang = Lang.EN;
+    if has_ta {
+        lang = Lang.MIXED;
+    } elif has_si {
+        lang = Lang.MIXED if len(latin) >= 3 else Lang.SI;
+    } elif singlish {
+        lang = Lang.MIXED if english else Lang.SI;
+    }
+    hazard: Hazard = Hazard.NONE;
+    if _has_any(t, _SPARK_WORDS) {
+        hazard = Hazard.SPARKS;
+    } elif _has_any(t, _FIRE_WORDS) {
+        hazard = Hazard.FIRE;
+    } elif _has_any(t, _WIRE_WORDS) {
+        hazard = Hazard.WIRE_DOWN;
+    } elif _has_any(t, _NOISE_WORDS) {
+        hazard = Hazard.TRANSFORMER_NOISE;
+    }
+    landmark: str = "";
+    m = _POLE_RE.search(t);
+    if m {
+        landmark = "pole " + str(m.group(2));
+    }
+    return ParsedText(index=0, lang=lang, hazard=hazard, landmark=landmark);
+}
+
 def to_parsed_text(p: LlmParsed) -> ParsedText {
     return ParsedText(index=p.index, lang=p.lang, hazard=p.hazard, landmark=p.landmark);
 }
 
 def reset_parse_stats {
-    global LLM_CALLS;
-    global CACHE_HITS;
-    global BD_SKIPS;
-    LLM_CALLS = 0;
-    CACHE_HITS = 0;
-    BD_SKIPS = 0;
+    m = sys.modules.get("agents_parse", sys.modules.get(__name__));
+    if m {
+        m.LLM_CALLS = 0;
+        m.CACHE_HITS = 0;
+        m.BD_SKIPS = 0;
+    }
 }
 
 # ----------------------------------------------------------------- internals

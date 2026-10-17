@@ -30,13 +30,27 @@ impl _apply(c: Complaint, p: ParsedText) {
     }
 }
 
+def _inc_llm_calls {
+    m = sys.modules.get("agents_parse");
+    if m { m.LLM_CALLS += 1; }
+}
+
+def _inc_cache_hits {
+    m = sys.modules.get("agents_parse");
+    if m { m.CACHE_HITS += 1; }
+}
+
+def _inc_bd_skips {
+    m = sys.modules.get("agents_parse");
+    if m { m.BD_SKIPS += 1; }
+}
+
 # One LLM batch call. Retries once on a rate limit; after that (or any other
 # error) returns [] and the caller falls back. The storm must never crash.
 impl _call_batch(texts: list[str]) -> list[LlmParsed] {
-    global LLM_CALLS;
     for attempt in range(2) {
         try {
-            LLM_CALLS += 1;
+            _inc_llm_calls();
             return parse_texts(texts);
         } except RateLimitError {
             if attempt == 0 {
@@ -51,10 +65,9 @@ impl _call_batch(texts: list[str]) -> list[LlmParsed] {
 }
 
 impl _call_single(raw: str) -> LlmParsed | None {
-    global LLM_CALLS;
     for attempt in range(2) {
         try {
-            LLM_CALLS += 1;
+            _inc_llm_calls();
             return parse_single(raw);
         } except RateLimitError {
             if attempt == 0 {
@@ -107,23 +120,26 @@ impl _parse_free_texts(texts: list[str]) -> dict[str, ParsedText] {
 }
 
 impl parse_batch(complaints: list[Complaint]) -> list[Complaint] {
-    global CACHE_HITS;
-    global BD_SKIPS;
     cache = _cache();
     known: dict[str, ParsedText] = dict(cache.entries);
     pending: dict[str, list[Complaint]] = {};
     for c in complaints {
         num = bd_number(c.text);
         if num {
-            BD_SKIPS += 1;
+            _inc_bd_skips();
             c.consumer_no = num;
             c.lang = Lang.EN;
             c.hazard = Hazard.NONE;
             continue;
         }
+        if is_mock() {
+            # Offline stand-in: no Gemini, and nothing is read from or written to ParseCache.
+            _apply(c, mock_parse(c.text));
+            continue;
+        }
         key = _cache_key(c.text);
         if key in known {
-            CACHE_HITS += 1;
+            _inc_cache_hits();
             _apply(c, known[key]);
         } else {
             if key not in pending {
@@ -157,17 +173,17 @@ impl parse_batch(complaints: list[Complaint]) -> list[Complaint] {
 }
 
 impl parse_one(c: Complaint) -> Complaint {
-    global CACHE_HITS;
-    global BD_SKIPS;
     num = bd_number(c.text);
     if num {
-        BD_SKIPS += 1;
+        _inc_bd_skips();
         c.consumer_no = num;
+    } elif is_mock() {
+        _apply(c, mock_parse(c.text));
     } else {
         key = _cache_key(c.text);
         cache = _cache();
         if key in cache.entries {
-            CACHE_HITS += 1;
+            _inc_cache_hits();
             _apply(c, cache.entries[key]);
         } else {
             p = _call_single(c.text);
