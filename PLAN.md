@@ -494,3 +494,13 @@ Each WP lists: **Owns** (the only files it may edit) Â· **Needs** (merged WPs) Â
   - Freeze. Full demo dry-run, then record.
 - **17:15**
   - Submitted: GitHub link, video, write-up, and every member has starred the Jac repo.
+
+---
+
+## 8. To change later (found 17 Oct, A3 review)
+
+- **README test section:** it says "run the entire test pipeline with the built-in script" but lists the commands by hand. Point it at `jac script test` (defined in `jac.toml`), and add `tests/verifier_tests.jac` to that script once B7 is stable.
+- **README line counts:** the "99.9% Jac, 27 files, 4,820 lines" table looks hand-written. Replace it with the real figure from GitHub's language bar before submitting.
+- **README Verifier claim:** the README presents the Verifier as complete while B7 is still in progress. Confirm B7 works (test 15) before keeping it.
+- **Test isolation:** run test files one per process (`jac script test`). A single `jac test -d tests/` shares one persisted graph, and a second session running `jac test` or `jac start` in the same checkout corrupts it. Use separate worktrees for parallel sessions.
+- **HTTP-level acceptance run** (A3): still open.
