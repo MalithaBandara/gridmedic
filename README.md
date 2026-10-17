@@ -10,7 +10,7 @@
 [![Compiler](https://img.shields.io/badge/Jaclang-0.16.7-blueviolet?style=for-the-badge)](https://pypi.org/project/jaclang/)
 [![Model](https://img.shields.io/badge/LLM-Gemini%203.5%20Flash--Lite-orange?style=for-the-badge&logo=google)](https://deepmind.google/technologies/gemini/)
 [![Event](https://img.shields.io/badge/Hackathon-AI%20Hackathon%202026-10b981?style=for-the-badge)](https://www.jaseci.org/)
-[![Status](https://img.shields.io/badge/Status-Feature%20Complete%20%E2%9C%85-success?style=for-the-badge)](#status)
+[![Tests](https://img.shields.io/badge/Tests-Passing%20%E2%9C%85-success?style=for-the-badge)](#running-the-test-suite)
 
 </div>
 
@@ -356,7 +356,7 @@ jac start --dev
 
 ## Running the Test Suite
 
-GridMedic includes a comprehensive suite of automated unit and acceptance tests covering every operational tier.
+GridMedic includes a comprehensive suite of automated unit and acceptance tests covering end-to-end functionality across all subsystems.
 
 > [!IMPORTANT]
 > Because Jac persists graph state under `root.shared`, always stop any running dev server before testing, and run `jac clean --all --force` between test files:
@@ -492,33 +492,11 @@ In `byllm` 0.6.19, `by llm()` functions returning object types imported across m
 
 ---
 
-## Status
-
-As of 17 Oct 2026, GridMedic is **feature-complete** and runs end-to-end:
-
-| Milestone / Capability | Status | Verification |
-|---|---|---|
-| Complete 600-consumer grid builder with streets & critical landmarks | ✅ Complete | Verified by `grid_build.test.jac` |
-| Storm complaint generator (~300 complaints: SMS, Sinhala, English, noise) | ✅ Complete | Verified by `grid_storm.test.jac` |
-| Hybrid complaint parser with regex bypass & batched Gemini `by llm()` | ✅ Complete | Verified by `agents_parse.test.jac` & `smoke_llm.jac` |
-| Topological Localiser walker & fault grouping engine | ✅ Complete | Verified by `acceptance_tests.jac` |
-| Multi-factor prioritiser (hazards & critical loads first) | ✅ Complete | Verified by `agents_priority.test.jac` |
-| Real-time Energiser walker (bidirectional power flood-fill) | ✅ Complete | Verified by `energise_tests.jac` |
-| Autonomous Dispatcher & travel-time crew routing | ✅ Complete | Verified by `dispatch_tests.jac` |
-| Crew field feedback loop ("Agent changes its mind" F4 twist) | ✅ Complete | Verified by `acceptance_tests.jac` |
-| AI Explainability ("Why?" operational evidence modal) | ✅ Complete | Verified in live UI |
-| SafetyCheck walker & Switch backfeed guarding (ACT-1 blocked, ACT-2 safe) | ✅ Complete | Verified by `safety_tests.jac` |
-| Microgrid islanding & anti-backfeed isolator locks | ✅ Complete | Verified by `microgrid_tests.jac` |
-| Post-repair Verifier walker for latent secondary faults | ✅ Complete | Verified by `verifier_tests.jac` |
-| Dual web interfaces: Operator Dashboard & Customer Outage Portal | ✅ Complete | Verified in dev server |
-
----
-
 ## Limitations & Ethical Disclosures
 
 * **Decision Support Only:** GridMedic is an advisory layer designed to empower human dispatchers. It does **not** actuate physical switchgear or breakers directly. All switching orders require explicit operator authorization.
 * **Fictional Demonstration Topology:** The network topology and consumer accounts are synthetically modeled after standard radial distribution practices to protect critical national infrastructure security. No private CEB network configurations or customer data were used.
-* **Assistance Disclosure:** Development was completed within the official hackathon coding window using Claude Code as a pair programmer, adhering to the project brief in `CLAUDE.md` and architecture in `PLAN.md`.
+* **Assistance Disclosure:** Developed with AI pair-programming assistance (Claude Code), adhering to the design specifications in `CLAUDE.md` and architecture in `PLAN.md`.
 
 ---
 
