@@ -50,6 +50,7 @@ def:pub OperatorApp -> JsxElement {
         running: bool = False,
         selected_fault_id: str = "",
         f5_on: bool = False,
+        scenario: str = "storm",
         why_text: str = "",
         why_id: str = "",    # fault the text was written for: slow replies must not show under another fault
         selected_crew_id: str = "CREW-A",
@@ -64,7 +65,6 @@ def:pub OperatorApp -> JsxElement {
 
     async def loadInitial -> None;
     async def handleStartStorm -> None;
-    async def handleStartBlackout -> None;
     async def handleReset -> None;
     async def handleTick -> None;
     async def handleSubmitCrewReport -> None;
@@ -84,6 +84,7 @@ def:pub OperatorApp -> JsxElement {
 
     hazard_faults: list[Fault] = [f for f in faults if f.hazard_label != "" and f.status_label != "Restored" and f.status_label != "Closed"];
     selected_faults: list[Fault] = [f for f in faults if f.id == selected_fault_id];
+    scenario_label: str = "Storm" if scenario == "storm" else ("Blackout" if scenario == "blackout" else "Island Collapse");
 
     # Ask for the 2-sentence reason when a fault is selected, and again when a
     # crew report changes it (the server caches it until the fault changes).
@@ -789,6 +790,38 @@ def:pub OperatorApp -> JsxElement {
                             </span>
                         </div>
 
+                        {#* Scenario Selector: takes effect on the next start *#}
+                        <div>
+                            <div style={{"fontSize": "0.68rem", "color": "#94a3b8", "marginBottom": "0.25rem"}}>
+                                {"Scenario"}
+                            </div>
+                            <div style={{"display": "flex", "flexDirection": "column", "gap": "0.3rem"}}>
+                                {for (sid, slabel, sdesc) in [
+                                    ("storm", "Storm", "4 faults: line down, 2 fuses, a service wire"),
+                                    ("blackout", "TL1 Blackout", "Transmission line trips, whole grid dark"),
+                                    ("island", "Island-wide Collapse", "National grid down, multilingual flood")
+                                ] {
+                                    <button
+                                        key={sid}
+                                        type="button"
+                                        onClick={lambda { scenario = sid; }}
+                                        style={{
+                                            "textAlign": "left",
+                                            "padding": "0.35rem 0.5rem",
+                                            "borderRadius": "4px",
+                                            "border": "1px solid " + ("#475569" if scenario == sid else "#1e293b"),
+                                            "cursor": "pointer",
+                                            "backgroundColor": "#1e293b" if scenario == sid else "#090d16",
+                                            "color": "#f8fafc" if scenario == sid else "#64748b"
+                                        }}
+                                    >
+                                        <div style={{"fontSize": "0.75rem", "fontWeight": "600"}}>{slabel}</div>
+                                        <div style={{"fontSize": "0.62rem", "opacity": "0.8"}}>{sdesc}</div>
+                                    </button>
+                                }}
+                            </div>
+                        </div>
+
                         {#* Speed Selector *#}
                         <div>
                             <div style={{"fontSize": "0.68rem", "color": "#94a3b8", "marginBottom": "0.25rem"}}>
@@ -818,15 +851,17 @@ def:pub OperatorApp -> JsxElement {
                             </div>
                         </div>
 
-                        {#* Optional hidden second fault (F5) *#}
-                        <label style={{"display": "flex", "alignItems": "center", "gap": "0.35rem", "fontSize": "0.7rem", "color": "#64748b", "cursor": "pointer"}}>
-                            <input
-                                type="checkbox"
-                                checked={f5_on}
-                                onChange={lambda e: ChangeEvent { f5_on = e.target.checked; }}
-                            />
-                            {"Hide secondary fault (T4 fuse) for verifier"}
-                        </label>
+                        {#* Optional hidden second fault (F5): only the storm has one *#}
+                        {if scenario == "storm" {
+                            <label key="f5-toggle" style={{"display": "flex", "alignItems": "center", "gap": "0.35rem", "fontSize": "0.7rem", "color": "#64748b", "cursor": "pointer"}}>
+                                <input
+                                    type="checkbox"
+                                    checked={f5_on}
+                                    onChange={lambda e: ChangeEvent { f5_on = e.target.checked; }}
+                                />
+                                {"Hide secondary fault (T4 fuse) for verifier"}
+                            </label>
+                        }}
 
                         {#* Primary Action Buttons *#}
                         <div style={{"display": "flex", "gap": "0.4rem"}}>
@@ -845,7 +880,7 @@ def:pub OperatorApp -> JsxElement {
                                     "cursor": "pointer"
                                 }}
                             >
-                                {("Pause" if running else "Start Storm")}
+                                {("Pause" if running else "Start " + scenario_label)}
                             </button>
 
                             <button
@@ -866,24 +901,6 @@ def:pub OperatorApp -> JsxElement {
                                 {"Step Tick"}
                             </button>
                         </div>
-
-                        <button
-                            type="button"
-                            onClick={handleStartBlackout}
-                            style={{
-                                "width": "100%",
-                                "padding": "0.45rem",
-                                "backgroundColor": "#7c2d12",
-                                "color": "white",
-                                "border": "none",
-                                "borderRadius": "6px",
-                                "fontSize": "0.8rem",
-                                "fontWeight": "700",
-                                "cursor": "pointer"
-                            }}
-                        >
-                            {"Trigger Blackout (TL1 trip)"}
-                        </button>
 
                         {#* Reset Button *#}
                         <button

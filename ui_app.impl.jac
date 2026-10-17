@@ -36,15 +36,8 @@ impl OperatorApp.loadInitial -> None {
     }
 }
 
-impl OperatorApp.handleStartBlackout -> None {
-    scenario: str = "blackout";
-    _ = root spawn start_storm(speed=speed, scenario=scenario);
-    running = True;
-    loadInitial();
-}
-
 impl OperatorApp.handleStartStorm -> None {
-    _ = root spawn start_storm(speed=speed, f5=f5_on);
+    _ = root spawn start_storm(speed=speed, f5=f5_on, scenario=scenario);
     running = True;
     loadInitial();
 }
