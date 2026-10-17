@@ -28,7 +28,7 @@ Complaints arrive through the 1987 hotline, SMS (`BD <consumer number>`), the CE
 3. **Ranks them.** Hazards first, then critical loads (hospital, water pump, schools, police station), then the number of homes affected and how long they have waited.
 4. **Dispatches crews.** The highest-priority unassigned fault goes to the nearest idle crew.
 5. **Changes its mind from field reports.** A crew's free-text report ("T9 is fine, service line down on Lake Road") updates the fault and the ranking, and the change is shown to the operator.
-6. **Restores power safely.** It proposes tie-switch switching plans, checks feeder capacity, and blocks any step that would energise a section where a crew is working.
+6. **Restores power safely.** It proposes switching plans, both closing the tie switch to the other feeder and starting a local microgrid (the hospital's diesel-and-battery backup, a neighbourhood solar-and-battery system). It checks capacity and battery time, and blocks any step that would energise or backfeed a section where a crew is working.
 7. **Verifies fixes.** If complaints continue after a repair, it looks for a hidden second fault.
 
 There are two views, served from one codebase:
@@ -55,8 +55,8 @@ There are two views, served from one codebase:
 | **Energiser** | Walker that recomputes which sections, transformers and homes have power |
 | **Dispatcher** | Assigns crews by travel time; crews move on a simulated clock |
 | **Field Feedback** | `by llm()` reads crew reports and updates the fault ("agent changes its mind") |
-| **Explainer** | `by llm()` explains in two sentences why a fault was identified and ranked |
-| **Restorer + SafetyCheck** | Builds tie-switch plans; switches refuse to close onto a crew's work zone |
+| **Explainer** | `by llm()` explains in two sentences why a fault was identified and ranked; cached until the fault changes, with an evidence-based fallback if the LLM is unavailable |
+| **Restorer + SafetyCheck** | Builds tie-switch and microgrid plans; switches refuse to close onto a crew's work zone, and a microgrid is only started once it is isolated from the faulted line |
 | **Verifier** | Detects complaints that continue after a repair |
 
 ## How we used Jac
@@ -65,7 +65,7 @@ GridMedic is built around Jac **walkers**. The power grid is a graph of nodes, a
 
 | Jac feature | Where it is used |
 |---|---|
-| Nodes and typed edges | The grid itself: substation, sections, switches, transformers, homes; `Feeds` edges in power-flow direction |
+| Nodes and typed edges | The grid itself: substation, sections, switches, transformers, homes, microgrids; `Feeds` edges in power-flow direction |
 | Walkers | Localiser, Energiser, Dispatcher, CrewReport, Restorer, SafetyCheck, Verifier |
 | Node abilities | Transformers and sections tally their own complaints; switches guard their own safety; faults re-evaluate themselves from crew reports |
 | `by llm()` with typed outputs | Complaint parsing, crew-report parsing, fault explanations |
@@ -84,12 +84,20 @@ GridMedic is built around Jac **walkers**. The power grid is a graph of nodes, a
 - **Spawn once per batch.** Each walker spawn costs ~0.2 s on this graph, so the Localiser is spawned once per tick for the whole batch of new complaints: 109 complaints are localised in 0.4 s.
 - **Nodes and walkers share one declaration file** (`grid.jac`) with bodies in `grid.impl/*.impl.jac`, which avoids circular imports and lets each teammate own separate implementation files.
 - **`by llm()` output types are declared next to the function** and copied into the shared types.
+- **Enums stored inside lists on a node come back as plain numbers.** Hazards read back from the complaint log compared unequal to `Hazard.WIRE_DOWN`, which silently dropped the line-down fault's hazard priority. The acceptance storm test caught it, and every read site now re-wraps the values (`fix_complaint`, `fix_parsed` in `gm_types.jac`).
 
 ## Demo data
 
 A fictional two-feeder radial network around a "Moratuwa Grid Substation": two feeders, five line sections, 10 transformers and **600 consumers** on named streets, a normally-open tie switch between the feeders, two Consumer Service Centres and three crews.
 
 Five priority facilities are shown on the map and boost a fault's priority: Lakeview General Hospital, the Reservoir Road Pumping Station, the Ward Place Police Station, and two schools.
+
+Two microgrids can carry load when the main grid can't reach it:
+
+- **MG-HOSP**, the hospital's diesel-and-battery backup on T3, which supplies the hospital only (about 240 minutes).
+- **MG-RES**, a Bridge Road solar-and-battery system on T5, which can carry up to 80 homes (about 120 minutes).
+
+The map shows each one's remaining battery.
 
 The demo scenario is a storm, because that is when complaint volume peaks. Its hidden ground truth, which the agents must discover from ~300 complaints alone:
 
@@ -122,13 +130,20 @@ jac start --dev
 
 Open http://localhost:8000 for the operator dashboard and http://localhost:8000/customer for the customer page; the API runs on port 8001. Restart the server after editing any `.jac` file.
 
-Tests: `jac clean --all --force` then `jac test`. The real-LLM check: `jac run scripts/smoke_llm.jac`.
+Tests: stop the server, run `jac clean --all --force`, then `jac test`. Cleaning fails while a server holds the database, and the tests would then reuse its data. The LLM-backed functions use `MockLLM` in tests. The real-LLM check: `jac run scripts/smoke_llm.jac`.
 
 The LLM is `gemini/gemini-3.5-flash-lite`, configured in `jac.toml`.
 
 ## Status
 
-As of 11:05 on 17 Oct, a full storm runs end to end in the browser on the real 600-consumer grid: Start Storm → complaints parsed and traced upstream → four ranked faults on a live map (the Pole 23 line down first, then the water pump's transformer, then T9's suspected fuse, then T8).
+As of early afternoon on 17 Oct, a full storm runs end to end in the browser on the real 600-consumer grid:
+
+1. Start Storm.
+2. ~300 complaints are parsed and traced upstream.
+3. Four ranked faults appear on a live map, each with a "Why?" explanation.
+4. Crews are dispatched and move on the map.
+5. A crew report corrects T9 to a Lake Road service wire.
+6. Restoration plans (tie switch and microgrids) are safety-checked: the unsafe plan is blocked, and the safe one restores T5's 70 homes.
 
 | Piece | State |
 |---|---|
@@ -139,14 +154,17 @@ As of 11:05 on 17 Oct, a full storm runs end to end in the browser on the real 6
 | Localiser and fault grouping | ✅ done |
 | Prioritiser | ✅ done |
 | Simulation pipeline and real API | ✅ done |
-| Operator dashboard, live grid map, customer page | ✅ basic version working |
-| Storm complaint generator | ⏳ in progress (a placeholder storm is used until it lands) |
-| Energiser (who has power), crew dispatch | ⏳ in progress |
-| Crew-report feedback ("agent changes its mind"), explainer | ⏳ planned |
-| Acceptance tests, Jac Hammer deploy | ⏳ planned |
-| Restoration, safety check, verifier | ⏳ planned (stretch) |
+| Operator dashboard, live grid map, customer page (bilingual reports, simulated SMS) | ✅ done |
+| Storm complaint generator (~300 complaints: BD SMS, English, Sinhala, duplicates, false reports) | ✅ done |
+| Energiser (who has power), crew dispatch and movement | ✅ done |
+| Crew-report feedback ("agent changes its mind") | ✅ done |
+| Explainer and "Why?" panel | ✅ done |
+| Restoration and safety check (tie switch, microgrids) | ✅ done |
+| Acceptance tests | ✅ storm, noise, safety, dispatch, energise and microgrid suites in `tests/` |
+| Verifier (hidden second fault) | 🟡 in progress (B7; its test 15 is `tests/verifier_tests.jac`) |
+| Jac Hammer deploy | ⏳ planned |
 
-**Language:** GitHub reports the repo as **99.8% Jac** (the rest is a 15-line CSS reset).
+**Language:** GitHub reports the repo as **99.9% Jac** (the rest is a 15-line CSS reset).
 
 ## Limitations and next steps
 
