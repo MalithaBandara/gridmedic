@@ -9,8 +9,8 @@
 [![Python Version](https://img.shields.io/badge/Python-%E2%89%A5%203.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Compiler](https://img.shields.io/badge/Jaclang-0.16.7-blueviolet?style=for-the-badge)](https://pypi.org/project/jaclang/)
 [![Model](https://img.shields.io/badge/LLM-Gemini%203.5%20Flash--Lite-orange?style=for-the-badge&logo=google)](https://deepmind.google/technologies/gemini/)
-[![Event](https://img.shields.io/badge/Hackathon-AI%20Hackathon%202026-10b981?style=for-the-badge)](https://www.jaseci.org/)
 [![Tests](https://img.shields.io/badge/Tests-Passing%20%E2%9C%85-success?style=for-the-badge)](#running-the-test-suite)
+[![Architecture](https://img.shields.io/badge/Architecture-Graph--Native%20Walkers-indigo?style=for-the-badge)](#system-architecture)
 
 </div>
 
@@ -18,7 +18,7 @@
 
 > *"The grid is a graph, and GridMedic's agents are walkers. They trace complaints upstream; every transformer counts its own reports and every switch guards its own safety. One language from the AI to the map."*
 
-Built from the ground up in pure [Jac](https://github.com/jaseci-labs/jac) for the **AI Hackathon 2026, powered by Jaseci Labs** (University of Moratuwa, 17 Oct 2026).
+An open-source, graph-native decision support engine built in pure [Jac](https://github.com/jaseci-labs/jac) to modernize electricity distribution operations, automate complaint clustering, and accelerate post-storm power restoration.
 
 ---
 
@@ -35,8 +35,9 @@ Built from the ground up in pure [Jac](https://github.com/jaseci-labs/jac) for t
 - [Running the Test Suite](#running-the-test-suite)
 - [Project Layout](#project-layout)
 - [Engineering Insights & Jac Traversal Benchmarks](#engineering-insights--jac-traversal-benchmarks)
-- [Limitations & Ethical Disclosures](#limitations--ethical-disclosures)
-- [The Team](#the-team)
+- [Future Work & Production Roadmap](#future-work--production-roadmap)
+- [Safety & Operational Principles](#safety--operational-principles)
+- [Team & Acknowledgements](#team--acknowledgements)
 
 ---
 
@@ -492,18 +493,53 @@ In `byllm` 0.6.19, `by llm()` functions returning object types imported across m
 
 ---
 
-## Limitations & Ethical Disclosures
+## 🚀 Future Work & Production Roadmap
 
-* **Decision Support Only:** GridMedic is an advisory layer designed to empower human dispatchers. It does **not** actuate physical switchgear or breakers directly. All switching orders require explicit operator authorization.
-* **Fictional Demonstration Topology:** The network topology and consumer accounts are synthetically modeled after standard radial distribution practices to protect critical national infrastructure security. No private CEB network configurations or customer data were used.
-* **Assistance Disclosure:** Developed with AI pair-programming assistance (Claude Code), adhering to the design specifications in `CLAUDE.md` and architecture in `PLAN.md`.
+To transition GridMedic from a decision-support prototype into enterprise utility deployment (e.g., across the Ceylon Electricity Board or regional distribution utilities), the following operational extensions are planned:
+
+### 1. Automated Real-Grid Ingestion (GIS & IEC CIM to Jac Graphs)
+* **GIS Asset Ingestion:** Automated converters to ingest utility Geographic Information System (GIS) datasets—including Esri Shapefiles, GeoJSON, and AutoCAD DXF—directly into Jac distribution graphs (`Substation` $\to$ `Section` $\to$ `Transformer` $\to$ `Home`), preserving exact geospatial coordinates and circuit configurations.
+* **IEC 61970/61968 CIM/XML Support:** Native ingestion of Common Information Model (CIM) standards widely used in electrical power systems, allowing utilities to export their network model directly into Jac graphs with zero manual topology authoring.
+* **Dynamic Network Reconfiguration:** Automatically reflect seasonal feeder changes, distributed solar (Rooftop PV) growth, and planned switch maintenance in the persistent graph.
+
+### 2. Live Utility Telecommunications & Omnichannel Integration
+* **Production SMS Gateway Connectors:** Direct webhook integrations with telecommunication SMS gateways (Dialog, Mobitel, SLT) and SMS aggregation platforms (Twilio, Infobip) for instant two-way SMS communication (`BD <consumer_no>` reporting and automated restoration status broadcasts).
+* **Utility App & IVR Telephony Integration:** Seamless REST / WebSocket integration into existing customer apps (CEBCare) and automated Interactive Voice Response (IVR) phone systems on the `1987` hotline.
+* **Multilingual Voice AI (Sinhala, Tamil, English):** Frontline voice triage using streaming speech-to-text models (Whisper / Gemini Multimodal Audio) to allow consumers to speak distress complaints over the phone in colloquial Sinhala, Tamil, or English, automatically converting them into structured hazard records.
+
+### 3. SCADA, Smart Meter (AMI) & IoT Telemetry Correlation
+* **SCADA / ADMS Handshake:** Bi-directional bridge to existing Supervisory Control and Data Acquisition (SCADA) systems via DNP3 or IEC 60870-5-104 protocols, correlating customer complaint clusters with physical protection relay trips and circuit breaker auto-recloser lockout events.
+* **Smart Meter (AMI) Last-Gasp Ping Ingestion:** Correlate consumer manual complaint logs with Automated Metering Infrastructure (AMI) power-loss "last-gasp" pings, allowing instant fault boundary confirmation before the first customer even places a phone call.
+
+### 4. Real-World Field Operations & Crew Telematics
+* **Mobile Field App for Crews:** A companion mobile application for field linemen and depot supervisors (built on Jac API RPC endpoints) for viewing assigned work zones, turn-by-turn routing, and one-tap work status updates (`ON_SITE`, `REPAIRING`, `RESTORED`).
+* **Live GPS Fleet Tracking:** Replace static depot-to-zone travel time matrices with real-time GPS telematic feeds and live traffic routing engines (OpenStreetMap / Google Maps Distance Matrix API).
+* **Multimodal Visual Damage Verification:** Field linemen capture photos of damaged lines or burnt transformers; Gemini Vision models verify component failure signatures, estimate repair complexity, and log inventory requirements.
+
+### 5. Advanced Electrical Optimization & Power Flow Analysis
+* **Optimal Power Flow (OPF) & Voltage Constraints:** Incorporate real-time AC power flow equations and thermal line loading constraints during tie-switch backfeed calculations to guarantee that transferring loads will not cause low voltage or overload downstream conductors.
+* **Coordinated Microgrid & DER Islanding:** Dynamic dispatch of grid-connected batteries, community solar, and distributed generators during extended feeder outages to maintain continuous power for life-critical facilities.
+
+### 6. Enterprise Security, Multi-Tenant RBAC & Regulatory Audit
+* **Role-Based Access Control (RBAC):** Cryptographically enforced permission tiers separating Dispatchers, Field Linemen, Station Engineers, and Public Consumers.
+* **Immutable Compliance Audit Trail:** Tamper-proof logging of all proposed switching plans, simulated safety proofs, and operator approvals for submission to national public utility commissions and safety regulatory bodies.
 
 ---
 
-## The Team
+## Safety & Operational Principles
 
-Built with pride for the **AI Hackathon 2026, powered by Jaseci Labs** at the University of Moratuwa:
+* **Human-in-the-Loop Control:** GridMedic is an advisory platform engineered to empower utility control engineers. It does **not** autonomously actuate physical circuit breakers, reclosers, or switchgear without explicit operator authorization.
+* **Deterministic Safety Verification:** Every switching operation generated by LLMs or heuristic algorithms is strictly pre-validated by deterministic topological graph walkers (`SafetyCheck`) before presentation to operators.
+* **Synthetic Demonstration Grid:** To protect critical national infrastructure security and consumer privacy, the reference grid topology and customer meter accounts in this repository are synthetic models based on realistic radial distribution designs.
 
+---
+
+## Team & Acknowledgements
+
+### Project Contributors
 * **Malitha Bandara** ([@MalithaBandara](https://github.com/MalithaBandara))
 * **Yasith Gurunayake** ([@yasithgurunayake](https://github.com/yasithgurunayake))
 * **Isindu Heshan** ([@isinduheshan](https://github.com/isinduheshan))
+
+### Acknowledgements
+Originally created for the **AI Hackathon 2026, powered by Jaseci Labs** at the Department of Electrical Engineering, University of Moratuwa.
