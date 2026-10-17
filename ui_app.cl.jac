@@ -37,7 +37,9 @@ def:pub OperatorApp -> JsxElement {
         selected_fault_id: str = "",
         selected_crew_id: str = "CREW-A",
         crew_report_text: str = "",
-        action_message: str = "";
+        action_message: str = "",
+        sim_panel_open: bool = True,
+        sim_minimized: bool = True;
 
     can with entry {
         loadInitial();
@@ -111,7 +113,7 @@ def:pub OperatorApp -> JsxElement {
                         }}
                     >
                         <span style={{"color": "#94a3b8", "fontSize": "0.75rem", "textTransform": "uppercase"}}>
-                            {"Storm Clock:"}
+                            {"Grid Clock:"}
                         </span>
                         <span style={{"fontWeight": "700", "color": "#38bdf8", "fontFamily": "monospace", "fontSize": "1.05rem"}}>
                             {f"{clock_min:.1f} min"}
@@ -191,86 +193,10 @@ def:pub OperatorApp -> JsxElement {
                 </div>
 
                 {#* Controls & Links *#}
-                <div style={{"display": "flex", "alignItems": "center", "gap": "0.5rem"}}>
-                    {#* Speed Buttons *#}
-                    <div style={{"display": "flex", "backgroundColor": "#1e293b", "borderRadius": "6px", "padding": "2px"}}>
-                        {[
-                            <button
-                                key={s}
-                                type="button"
-                                onClick={lambda { speed = s; }}
-                                style={{
-                                    "padding": "0.3rem 0.6rem",
-                                    "fontSize": "0.75rem",
-                                    "borderRadius": "4px",
-                                    "border": "none",
-                                    "cursor": "pointer",
-                                    "fontWeight": "600",
-                                    "backgroundColor": "#0284c7" if speed == s else "transparent",
-                                    "color": "#ffffff" if speed == s else "#94a3b8"
-                                }}
-                            >
-                                {f"{s}×"}
-                            </button>
-                            for s in [1, 5, 20]
-                        ]}
-                    </div>
-
-                    <button
-                        type="button"
-                        onClick={handleStartStorm}
-                        style={{
-                            "padding": "0.4rem 0.8rem",
-                            "backgroundColor": "#16a34a",
-                            "color": "white",
-                            "border": "none",
-                            "borderRadius": "6px",
-                            "fontSize": "0.8rem",
-                            "fontWeight": "600",
-                            "cursor": "pointer"
-                        }}
-                    >
-                        {"▶ Start Storm"}
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={handleTick}
-                        style={{
-                            "padding": "0.4rem 0.8rem",
-                            "backgroundColor": "#2563eb",
-                            "color": "white",
-                            "border": "none",
-                            "borderRadius": "6px",
-                            "fontSize": "0.8rem",
-                            "fontWeight": "600",
-                            "cursor": "pointer"
-                        }}
-                    >
-                        {"Step Tick"}
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={handleReset}
-                        style={{
-                            "padding": "0.4rem 0.8rem",
-                            "backgroundColor": "#334155",
-                            "color": "#e2e8f0",
-                            "border": "none",
-                            "borderRadius": "6px",
-                            "fontSize": "0.8rem",
-                            "fontWeight": "600",
-                            "cursor": "pointer"
-                        }}
-                    >
-                        {"Reset"}
-                    </button>
-
+                <div style={{"display": "flex", "alignItems": "center", "gap": "0.6rem"}}>
                     <Link
                         to="/customer"
                         style={{
-                            "marginLeft": "0.5rem",
                             "padding": "0.4rem 0.75rem",
                             "backgroundColor": "#1e293b",
                             "border": "1px solid #38bdf8",
@@ -278,11 +204,52 @@ def:pub OperatorApp -> JsxElement {
                             "borderRadius": "6px",
                             "textDecoration": "none",
                             "fontSize": "0.8rem",
-                            "fontWeight": "600"
+                            "fontWeight": "600",
+                            "display": "flex",
+                            "alignItems": "center",
+                            "gap": "0.35rem"
                         }}
                     >
                         {"Customer Portal ↗"}
                     </Link>
+
+                    <button
+                        id="sim-header-btn"
+                        type="button"
+                        onClick={lambda {
+                            if not sim_panel_open {
+                                sim_panel_open = True;
+                                sim_minimized = False;
+                            } else {
+                                sim_minimized = not sim_minimized;
+                            }
+                        }}
+                        style={{
+                            "padding": "0.4rem 0.75rem",
+                            "backgroundColor": "#064e3b" if running else "#1e293b",
+                            "border": "1px solid " + ("#10b981" if running else "#38bdf8"),
+                            "color": "#86efac" if running else "#38bdf8",
+                            "borderRadius": "6px",
+                            "fontSize": "0.8rem",
+                            "fontWeight": "600",
+                            "cursor": "pointer",
+                            "display": "flex",
+                            "alignItems": "center",
+                            "gap": "0.45rem"
+                        }}
+                    >
+                        <span>{"⚡"}</span>
+                        <span>{"Simulation Controls"}</span>
+                        <span
+                            style={{
+                                "width": "8px",
+                                "height": "8px",
+                                "borderRadius": "50%",
+                                "backgroundColor": "#10b981" if running else "#f59e0b",
+                                "display": "inline-block"
+                            }}
+                        />
+                    </button>
                 </div>
             </header>
 
@@ -826,5 +793,316 @@ def:pub OperatorApp -> JsxElement {
                     </div>
                 </div>
             </footer>
+
+            {#* FLOATING SIMULATION CONTROLLER (MINIMIZABLE POPUP) *#}
+            {sim_panel_open and sim_minimized and (
+                <div
+                    style={{
+                        "position": "fixed",
+                        "bottom": "1.25rem",
+                        "right": "1.25rem",
+                        "zIndex": "1000",
+                        "backgroundColor": "#0f172a",
+                        "border": "1px solid #0284c7",
+                        "borderRadius": "8px",
+                        "boxShadow": "0 10px 25px -5px rgba(0, 0, 0, 0.7)",
+                        "padding": "0.45rem 0.75rem",
+                        "display": "flex",
+                        "alignItems": "center",
+                        "gap": "0.5rem"
+                    }}
+                >
+                    <div style={{"display": "flex", "alignItems": "center", "gap": "0.3rem"}}>
+                        <span style={{"color": "#38bdf8", "fontSize": "0.85rem"}}>{"⚡"}</span>
+                        <span style={{"fontSize": "0.75rem", "fontWeight": "700", "color": "#f8fafc"}}>
+                            {f"Sim: {clock_min:.1f}m"}
+                        </span>
+                        <span
+                            style={{
+                                "fontSize": "0.65rem",
+                                "padding": "0.1rem 0.35rem",
+                                "borderRadius": "3px",
+                                "backgroundColor": "#1e3a8a",
+                                "color": "#93c5fd",
+                                "fontWeight": "600"
+                            }}
+                        >
+                            {f"{speed}×"}
+                        </span>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={handleStartStorm}
+                        style={{
+                            "padding": "0.25rem 0.55rem",
+                            "backgroundColor": "#ea580c" if running else "#16a34a",
+                            "color": "white",
+                            "border": "none",
+                            "borderRadius": "4px",
+                            "fontSize": "0.75rem",
+                            "fontWeight": "600",
+                            "cursor": "pointer"
+                        }}
+                    >
+                        {"⏸ Pause" if running else "▶ Run"}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={handleTick}
+                        style={{
+                            "padding": "0.25rem 0.55rem",
+                            "backgroundColor": "#2563eb",
+                            "color": "white",
+                            "border": "none",
+                            "borderRadius": "4px",
+                            "fontSize": "0.75rem",
+                            "fontWeight": "600",
+                            "cursor": "pointer"
+                        }}
+                    >
+                        {"⏭ Step"}
+                    </button>
+
+                    <button
+                        id="sim-dock-settings-btn"
+                        type="button"
+                        onClick={lambda { sim_minimized = False; }}
+                        title="Expand Simulation Settings"
+                        style={{
+                            "padding": "0.25rem 0.5rem",
+                            "backgroundColor": "#334155",
+                            "color": "#e2e8f0",
+                            "border": "none",
+                            "borderRadius": "4px",
+                            "fontSize": "0.75rem",
+                            "fontWeight": "600",
+                            "cursor": "pointer"
+                        }}
+                    >
+                        {"▲ Settings"}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={lambda { sim_panel_open = False; }}
+                        title="Close Simulation Panel"
+                        style={{
+                            "padding": "0.25rem 0.45rem",
+                            "backgroundColor": "transparent",
+                            "color": "#94a3b8",
+                            "border": "none",
+                            "borderRadius": "4px",
+                            "fontSize": "0.8rem",
+                            "cursor": "pointer"
+                        }}
+                    >
+                        {"✕"}
+                    </button>
+                </div>
+            )}
+
+            {sim_panel_open and (not sim_minimized) and (
+                <div
+                    style={{
+                        "position": "fixed",
+                        "bottom": "1.25rem",
+                        "right": "1.25rem",
+                        "zIndex": "1000",
+                        "width": "350px",
+                        "maxWidth": "calc(100vw - 2.5rem)",
+                        "backgroundColor": "#0f172a",
+                        "border": "1px solid #38bdf8",
+                        "borderRadius": "12px",
+                        "boxShadow": "0 20px 40px rgba(0, 0, 0, 0.8)",
+                        "overflow": "hidden"
+                    }}
+                >
+                    {#* Popup Header *#}
+                    <div
+                        style={{
+                            "display": "flex",
+                            "justifyContent": "space-between",
+                            "alignItems": "center",
+                            "padding": "0.75rem 1rem",
+                            "backgroundColor": "#1e293b",
+                            "borderBottom": "1px solid #334155"
+                        }}
+                    >
+                        <div style={{"display": "flex", "alignItems": "center", "gap": "0.4rem"}}>
+                            <span style={{"color": "#38bdf8", "fontSize": "1.1rem"}}>{"⚡"}</span>
+                            <div>
+                                <div style={{"fontWeight": "700", "fontSize": "0.85rem", "color": "#f8fafc"}}>
+                                    {"Simulation Settings"}
+                                </div>
+                                <div style={{"fontSize": "0.68rem", "color": "#94a3b8"}}>
+                                    {"Scenario Injection & Time Controls"}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{"display": "flex", "alignItems": "center", "gap": "0.35rem"}}>
+                            <button
+                                type="button"
+                                onClick={lambda { sim_minimized = True; }}
+                                title="Minimize to Dock"
+                                style={{
+                                    "padding": "0.2rem 0.45rem",
+                                    "backgroundColor": "#334155",
+                                    "color": "#e2e8f0",
+                                    "border": "none",
+                                    "borderRadius": "4px",
+                                    "fontSize": "0.75rem",
+                                    "cursor": "pointer"
+                                }}
+                            >
+                                {"—"}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={lambda { sim_panel_open = False; }}
+                                title="Close Panel"
+                                style={{
+                                    "padding": "0.2rem 0.45rem",
+                                    "backgroundColor": "#334155",
+                                    "color": "#e2e8f0",
+                                    "border": "none",
+                                    "borderRadius": "4px",
+                                    "fontSize": "0.75rem",
+                                    "cursor": "pointer"
+                                }}
+                            >
+                                {"✕"}
+                            </button>
+                        </div>
+                    </div>
+
+                    {#* Popup Body *#}
+                    <div style={{"padding": "1rem", "display": "flex", "flexDirection": "column", "gap": "0.9rem"}}>
+                        {#* Status & Clock *#}
+                        <div
+                            style={{
+                                "display": "flex",
+                                "justifyContent": "space-between",
+                                "alignItems": "center",
+                                "padding": "0.5rem 0.75rem",
+                                "backgroundColor": "#182234",
+                                "borderRadius": "6px",
+                                "border": "1px solid #334155"
+                            }}
+                        >
+                            <div>
+                                <div style={{"fontSize": "0.65rem", "color": "#94a3b8", "textTransform": "uppercase"}}>
+                                    {"Simulation Clock"}
+                                </div>
+                                <div style={{"fontSize": "1.2rem", "fontWeight": "800", "color": "#38bdf8", "fontFamily": "monospace"}}>
+                                    {f"{clock_min:.1f} min"}
+                                </div>
+                            </div>
+                            <span
+                                style={{
+                                    "fontSize": "0.75rem",
+                                    "padding": "0.25rem 0.55rem",
+                                    "borderRadius": "4px",
+                                    "backgroundColor": "#14532d" if running else "#334155",
+                                    "color": "#86efac" if running else "#94a3b8",
+                                    "fontWeight": "700"
+                                }}
+                            >
+                                {"● Active" if running else "⏸ Paused"}
+                            </span>
+                        </div>
+
+                        {#* Speed Selector *#}
+                        <div>
+                            <div style={{"fontSize": "0.72rem", "fontWeight": "600", "color": "#cbd5e1", "marginBottom": "0.35rem"}}>
+                                {"Simulation Speed"}
+                            </div>
+                            <div style={{"display": "flex", "gap": "0.4rem"}}>
+                                {[
+                                    <button
+                                        key={s}
+                                        type="button"
+                                        onClick={lambda { speed = s; }}
+                                        style={{
+                                            "flex": "1",
+                                            "padding": "0.4rem",
+                                            "fontSize": "0.8rem",
+                                            "borderRadius": "6px",
+                                            "border": "1px solid " + ("#38bdf8" if speed == s else "#334155"),
+                                            "cursor": "pointer",
+                                            "fontWeight": "700",
+                                            "backgroundColor": "#0284c7" if speed == s else "#1e293b",
+                                            "color": "#ffffff" if speed == s else "#94a3b8"
+                                        }}
+                                    >
+                                        {f"{s}×"}
+                                    </button>
+                                    for s in [1, 5, 20]
+                                ]}
+                            </div>
+                        </div>
+
+                        {#* Primary Action Buttons *#}
+                        <div style={{"display": "flex", "gap": "0.5rem"}}>
+                            <button
+                                type="button"
+                                onClick={handleStartStorm}
+                                style={{
+                                    "flex": "1",
+                                    "padding": "0.55rem",
+                                    "backgroundColor": "#ea580c" if running else "#16a34a",
+                                    "color": "white",
+                                    "border": "none",
+                                    "borderRadius": "6px",
+                                    "fontSize": "0.85rem",
+                                    "fontWeight": "700",
+                                    "cursor": "pointer"
+                                }}
+                            >
+                                {("⏸ Pause Storm" if running else "▶ Start Storm")}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={handleTick}
+                                style={{
+                                    "flex": "1",
+                                    "padding": "0.55rem",
+                                    "backgroundColor": "#2563eb",
+                                    "color": "white",
+                                    "border": "none",
+                                    "borderRadius": "6px",
+                                    "fontSize": "0.85rem",
+                                    "fontWeight": "700",
+                                    "cursor": "pointer"
+                                }}
+                            >
+                                {"⏭ Step Tick"}
+                            </button>
+                        </div>
+
+                        {#* Reset Button *#}
+                        <button
+                            type="button"
+                            onClick={handleReset}
+                            style={{
+                                "width": "100%",
+                                "padding": "0.45rem",
+                                "backgroundColor": "#1e293b",
+                                "color": "#f87171",
+                                "border": "1px solid #7f1d1d",
+                                "borderRadius": "6px",
+                                "fontSize": "0.78rem",
+                                "fontWeight": "600",
+                                "cursor": "pointer"
+                            }}
+                        >
+                            {"↺ Reset Scenario to Minute 0"}
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>;
 }
