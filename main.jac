@@ -1,12 +1,8 @@
 """gridmedic - Entry Point.
 
-Combines server-side endpoints with the client-side UI.
+Combines server-side API endpoints with the client-side UI router.
 """
 
-import from endpoints { Message, PostMessage, ListMessages }
-
-# GridMedic API (walker:pub endpoints, contract owned by B). Importing them
-# here registers them even before a .cl.jac file sv-imports them.
 import from api {
     get_grid,
     start_storm,
@@ -24,11 +20,20 @@ import from api {
     reset
 }
 
-# Client-side UI
+# Client-side UI & Routing
 cl {
-    import from .frontend { app as ClientApp }
+    import "./global.css";
+    import from "@jac/runtime" { Router, Routes, Route, Navigate }
+    import from .ui_app { OperatorApp }
+    import from .ui_customer { CustomerApp }
 
     def:pub app -> JsxElement {
-        return <ClientApp/>;
+        return <Router>
+            <Routes>
+                <Route path="/" element={<OperatorApp />} />
+                <Route path="/customer" element={<CustomerApp />} />
+                <Route path="*" element={<Navigate to="/" replace={True} />} />
+            </Routes>
+        </Router>;
     }
 }
