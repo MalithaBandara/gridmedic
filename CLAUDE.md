@@ -128,7 +128,8 @@ Facts for the **pip line** (checked on Windows 11 with `jaclang` 0.16.7 and its 
 ## 2. Product overview
 
 ### One-liner
-**GridMedic turns a storm's flood of power-outage complaints into a short, ranked, safe action plan — and updates the plan as field crews report back.**
+**GridMedic sends walkers to trace every power-outage complaint back to its fault, turning a flood of reports into a short, ranked, safe action plan — and updates the plan as field crews report back.**
+- It's for everyday outages. Storms are when complaint volume peaks, so the demo uses a storm scenario.
 
 ### The problem (verified facts — use these in UI copy and write-up)
 - In May 2024 storms, the Ceylon Electricity Board (CEB) received **over 61,000 breakdown complaints in six days**, affecting **467,500+ users**. (Daily FT, 27 May 2024)
@@ -191,7 +192,7 @@ Build strictly in tier order. Do not start a higher tier until the lower tier wo
 | **Parallel walkers (`flow` / `wait`)** | Localising a burst of hundreds of complaints concurrently, and overlapping the batched LLM parse calls (T2 nice-to-have). Launch each `flow` through a helper function: a `flow` inside a comprehension binds late (§1a) |
 | **Walker control (`visit`, `report`, `disengage`)** | Edge-filtered traversal, reporting findings, stopping at open switches / blocked steps |
 
-**Pitch line:** *"The grid is a graph. Walkers trace complaints upstream; every transformer counts its own reports and every switch guards its own safety. One language from the AI to the map."*
+**Pitch line:** *"The grid is a graph, and GridMedic's agents are walkers. They trace complaints upstream; every transformer counts its own reports and every switch guards its own safety. One language from the AI to the map."*
 
 ---
 

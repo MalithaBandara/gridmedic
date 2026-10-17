@@ -1,5 +1,7 @@
 # GridMedic
 
+> *Walkers that trace every outage complaint back to its fault.*
+
 **AI decision support for power-outage complaints.** GridMedic groups a utility's incoming outage reports into real faults, ranks them (hazards first), recommends crew dispatch, learns from crew field reports and suggests safe restoration steps. A human operator approves every action.
 
 Built in [Jac](https://github.com/jaseci-labs/jac) for the **AI Hackathon 2026, powered by Jaseci Labs** (University of Moratuwa, 17 Oct 2026).
@@ -55,6 +57,8 @@ There are two views: an **operator dashboard** (grid map, ranked faults, crews, 
 
 ## How we used Jac
 
+GridMedic is built around Jac **walkers**. The power grid is a graph of nodes, and each agent is a walker that moves through it: the Localiser walks upstream from a complaining home to the fault, the Energiser walks downstream to work out who has power, and the SafetyCheck walks a switching plan step by step and stops at the first unsafe one. The nodes do their own share of the work as walkers arrive: transformers count their own complaints and switches refuse to close onto a crew's work zone.
+
 | Jac feature | Where it is used |
 |---|---|
 | Nodes and typed edges | The grid itself: substation, sections, switches, transformers, homes; `Feeds` edges in power-flow direction |
@@ -68,7 +72,7 @@ There are two views: an **operator dashboard** (grid map, ranked faults, crews, 
 | `flow` / `wait` | Overlapping the batched LLM parse calls |
 | `visit`, `report`, `disengage` | Edge-filtered traversal, reporting findings, stopping at blocked switching steps |
 
-> *The grid is a graph. Walkers trace complaints upstream; every transformer counts its own reports and every switch guards its own safety. One language from the AI to the map.*
+> *The grid is a graph, and GridMedic's agents are walkers. They trace complaints upstream; every transformer counts its own reports and every switch guards its own safety. One language from the AI to the map.*
 
 ## Demo data
 
