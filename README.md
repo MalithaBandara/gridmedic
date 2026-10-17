@@ -25,13 +25,16 @@ Complaints arrive through the 1987 hotline, SMS (`BD <consumer number>`), the CE
 
 1. **Understands messy complaints.** English and Sinhala free text and `BD` SMS are parsed into typed records: language, hazard (wire down, sparks, fire, transformer noise) and landmarks such as "near pole 23".
 2. **Finds the real faults.** Walkers trace each complaint upstream through the grid. Transformers and line sections count their own reports, and the reports are grouped into faults: a line down, a blown transformer fuse or a single street's service wire.
-3. **Ranks them.** Hazards first, then critical loads (hospital, water pump), then the number of homes affected and how long they have waited.
+3. **Ranks them.** Hazards first, then critical loads (hospital, water pump, schools, police station), then the number of homes affected and how long they have waited.
 4. **Dispatches crews.** The highest-priority unassigned fault goes to the nearest idle crew.
 5. **Changes its mind from field reports.** A crew's free-text report ("T9 is fine, service line down on Lake Road") updates the fault and the ranking, and the change is shown to the operator.
 6. **Restores power safely.** It proposes tie-switch switching plans, checks feeder capacity, and blocks any step that would energise a section where a crew is working.
 7. **Verifies fixes.** If complaints continue after a repair, it looks for a hidden second fault.
 
-There are two views: an **operator dashboard** (grid map, ranked faults, crews, event log, reasoning, crew-report box) and a **customer page** (report an outage, check status, simulated SMS updates).
+There are two views, served from one codebase:
+
+- **Operator dashboard** (`/`): live grid map, consumer and critical-load counters, ranked faults with evidence ("Why?"), crews, event log, crew-report box, and a floating simulation controller (start, speed, reset).
+- **Customer page** (`/customer`): report an outage, check status by consumer number, and see simulated SMS updates.
 
 ### What it is not
 
@@ -48,6 +51,7 @@ There are two views: an **operator dashboard** (grid map, ranked faults, crews, 
 | **Localiser** | Walker that walks upstream from a complaint's home; nodes tally their own reports |
 | **Grouper** | Turns tallies into `LINE_DOWN`, `TX_FUSE` or `SERVICE_WIRE` faults with evidence and confidence |
 | **Prioritiser** | `1000·hazard + 500·critical load + homes affected + 2·minutes waiting` |
+| **Simulation pipeline** | Each tick of a simulated clock releases complaints, parses them, runs one Localiser for the batch, regroups faults and re-ranks them |
 | **Energiser** | Walker that recomputes which sections, transformers and homes have power |
 | **Dispatcher** | Assigns crews by travel time; crews move on a simulated clock |
 | **Field Feedback** | `by llm()` reads crew reports and updates the fault ("agent changes its mind") |
@@ -74,13 +78,22 @@ GridMedic is built around Jac **walkers**. The power grid is a graph of nodes, a
 
 > *The grid is a graph, and GridMedic's agents are walkers. They trace complaints upstream; every transformer counts its own reports and every switch guards its own safety. One language from the AI to the map.*
 
+### What we learned about Jac along the way
+
+- **Traversal speed matters on a 600-home graph.** Typed-edge filters such as `[n <-:Feeds:<-]` on our inherited node types cost about 12 ms per node, so one walk over the grid took 8–10 s. Plain `[n -->]` filtered with `isinstance` took 0.13 s for the same walk. All traversals use small `children()` / `parents()` helpers in `grid.jac`, and walkers `visit children(here)`.
+- **Spawn once per batch.** Each walker spawn costs ~0.2 s on this graph, so the Localiser is spawned once per tick for the whole batch of new complaints: 109 complaints are localised in 0.4 s.
+- **Nodes and walkers share one declaration file** (`grid.jac`) with bodies in `grid.impl/*.impl.jac`, which avoids circular imports and lets each teammate own separate implementation files.
+- **`by llm()` output types are declared next to the function** and copied into the shared types.
+
 ## Demo data
 
-A fictional two-feeder radial network: one substation, two feeders, 10 transformers, **600 homes**, a hospital and a water pump as critical loads, a normally-open tie switch between the feeders, two service centres and three crews.
+A fictional two-feeder radial network around a "Moratuwa Grid Substation": two feeders, five line sections, 10 transformers and **600 consumers** on named streets, a normally-open tie switch between the feeders, two Consumer Service Centres and three crews.
+
+Five priority facilities are shown on the map and boost a fault's priority: Lakeview General Hospital, the Reservoir Road Pumping Station, the Ward Place Police Station, and two schools.
 
 The demo scenario is a storm, because that is when complaint volume peaks. Its hidden ground truth, which the agents must discover from ~300 complaints alone:
 
-- a line down at Pole 23 (205 homes, including the hospital, with sparks reported),
+- a line down at Pole 23 (205 homes, including the hospital and a school, with sparks reported),
 - two blown transformer fuses (one feeding the water pump),
 - a service wire down on one street, first suspected as a transformer fuse until a crew corrects it,
 - optionally, a second fault hidden behind the first.
@@ -107,24 +120,33 @@ $env:JAC_OPT_LEVEL = "0"   # avoids an llvmlite crash in jaclang 0.16.7
 jac start --dev
 ```
 
-The UI is served on port 8000 and the API on 8001. Tests: `jac clean --all --force` then `jac test`. The real-LLM check: `jac run scripts/smoke_llm.jac`.
+Open http://localhost:8000 for the operator dashboard and http://localhost:8000/customer for the customer page; the API runs on port 8001. Restart the server after editing any `.jac` file.
+
+Tests: `jac clean --all --force` then `jac test`. The real-LLM check: `jac run scripts/smoke_llm.jac`.
 
 The LLM is `gemini/gemini-3.5-flash-lite`, configured in `jac.toml`.
 
 ## Status
 
+As of 11:05 on 17 Oct, a full storm runs end to end in the browser on the real 600-consumer grid: Start Storm → complaints parsed and traced upstream → four ranked faults on a live map (the Pole 23 line down first, then the water pump's transformer, then T9's suspected fuse, then T8).
+
 | Piece | State |
 |---|---|
-| Scaffold, Gemini config, LLM smoke script | ✅ done |
-| Shared types (`gm_types.jac`), grid declarations (`grid.jac`), mock API | ✅ done |
+| Scaffold, Gemini config, LLM smoke script | ✅ done (live Gemini check not run yet) |
+| Shared types (`gm_types.jac`), grid declarations (`grid.jac`) | ✅ done |
+| Demo grid builder (600 consumers, streets, priority facilities) | ✅ done |
 | Complaint parser (BD regex, batched `by llm()`, cache, duplicates) | ✅ done |
+| Localiser and fault grouping | ✅ done |
 | Prioritiser | ✅ done |
-| Demo grid builder, storm generator | ⏳ in progress |
-| Localiser and grouping | ⏳ in progress |
-| Simulation pipeline and real API | ⏳ planned |
-| Operator dashboard and grid map | ⏳ planned |
-| Dispatch, field feedback, customer page | ⏳ planned |
+| Simulation pipeline and real API | ✅ done |
+| Operator dashboard, live grid map, customer page | ✅ basic version working |
+| Storm complaint generator | ⏳ in progress (a placeholder storm is used until it lands) |
+| Energiser (who has power), crew dispatch | ⏳ in progress |
+| Crew-report feedback ("agent changes its mind"), explainer | ⏳ planned |
+| Acceptance tests, Jac Hammer deploy | ⏳ planned |
 | Restoration, safety check, verifier | ⏳ planned (stretch) |
+
+**Language:** GitHub reports the repo as **99.8% Jac** (the rest is a 15-line CSS reset).
 
 ## Limitations and next steps
 
@@ -139,4 +161,6 @@ Coding agents (Claude Code) were used to write code during the hackathon, guided
 
 ## Team
 
-_To be added._
+- Malitha Bandara ([@MalithaBandara](https://github.com/MalithaBandara))
+- Yasith Gurunayake ([@yasithgurunayake](https://github.com/yasithgurunayake))
+- [@isinduheshan](https://github.com/isinduheshan)
