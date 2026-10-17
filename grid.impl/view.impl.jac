@@ -26,6 +26,22 @@ impl Snapshot.collect {
         v.homes = here.homes;
         ups = parents(here);
         v.parent_id = ups[0].id if ups else "";
+        for k in children(here) {
+            if isinstance(k, Microgrid) and k.supplying {
+                v.powered_by = k.id;
+            }
+        }
+    } elif isinstance(here, Microgrid) {
+        v.kind = "microgrid";
+        v.label = here.name or here.id;
+        v.parent_id = parents(here)[0].id if parents(here) else "";
+        v.battery_min = here.battery_min;
+        v.battery_max = here.battery_max;
+        v.supplying = here.supplying;
+        v.islanded = here.islanded;
+        v.isolated = here.isolated;
+        v.has_power = here.supplying;
+        v.status = "restored" if here.supplying else "normal";
     } elif isinstance(here, Home) {
         v.kind = "home";
         v.label = here.consumer_no;
@@ -38,7 +54,8 @@ impl Snapshot.collect {
     for child in kids {
         is_tie: bool = isinstance(child, Switch) and child.kind == "tie";
         closed: bool = child.closed if isinstance(child, Switch) else True;
-        self.edges.append(GridEdgeView(from_id=here.id, to_id=child.id, kind="tie" if is_tie else "feeds", closed=closed));
+        ekind: str = "backup" if isinstance(child, Microgrid) else ("tie" if is_tie else "feeds");
+        self.edges.append(GridEdgeView(from_id=here.id, to_id=child.id, kind=ekind, closed=closed));
     }
     visit kids;
 }
