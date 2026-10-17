@@ -39,7 +39,7 @@ def:pub OperatorApp -> JsxElement {
         crew_report_text: str = "",
         action_message: str = "",
         sim_panel_open: bool = True,
-        sim_minimized: bool = True;
+        sim_minimized: bool = False;
 
     can with entry {
         loadInitial();
@@ -99,25 +99,6 @@ def:pub OperatorApp -> JsxElement {
                         <div style={{"fontSize": "0.75rem", "color": "#94a3b8"}}>
                             {"Moratuwa Grid Substation (SS1) · 600 Homes"}
                         </div>
-                    </div>
-
-                    <div
-                        style={{
-                            "display": "flex",
-                            "alignItems": "center",
-                            "gap": "0.35rem",
-                            "backgroundColor": "#1e293b",
-                            "padding": "0.4rem 0.75rem",
-                            "borderRadius": "6px",
-                            "border": "1px solid #334155"
-                        }}
-                    >
-                        <span style={{"color": "#94a3b8", "fontSize": "0.75rem", "textTransform": "uppercase"}}>
-                            {"Grid Clock:"}
-                        </span>
-                        <span style={{"fontWeight": "700", "color": "#38bdf8", "fontFamily": "monospace", "fontSize": "1.05rem"}}>
-                            {f"{clock_min:.1f} min"}
-                        </span>
                     </div>
                 </div>
 
@@ -192,12 +173,12 @@ def:pub OperatorApp -> JsxElement {
                     </div>
                 </div>
 
-                {#* Controls & Links *#}
-                <div style={{"display": "flex", "alignItems": "center", "gap": "0.6rem"}}>
+                {#* Portal Navigation *#}
+                <div style={{"display": "flex", "alignItems": "center"}}>
                     <Link
                         to="/customer"
                         style={{
-                            "padding": "0.4rem 0.75rem",
+                            "padding": "0.45rem 0.85rem",
                             "backgroundColor": "#1e293b",
                             "border": "1px solid #38bdf8",
                             "color": "#38bdf8",
@@ -212,44 +193,6 @@ def:pub OperatorApp -> JsxElement {
                     >
                         {"Customer Portal ↗"}
                     </Link>
-
-                    <button
-                        id="sim-header-btn"
-                        type="button"
-                        onClick={lambda {
-                            if not sim_panel_open {
-                                sim_panel_open = True;
-                                sim_minimized = False;
-                            } else {
-                                sim_minimized = not sim_minimized;
-                            }
-                        }}
-                        style={{
-                            "padding": "0.4rem 0.75rem",
-                            "backgroundColor": "#064e3b" if running else "#1e293b",
-                            "border": "1px solid " + ("#10b981" if running else "#38bdf8"),
-                            "color": "#86efac" if running else "#38bdf8",
-                            "borderRadius": "6px",
-                            "fontSize": "0.8rem",
-                            "fontWeight": "600",
-                            "cursor": "pointer",
-                            "display": "flex",
-                            "alignItems": "center",
-                            "gap": "0.45rem"
-                        }}
-                    >
-                        <span>{"⚡"}</span>
-                        <span>{"Simulation Controls"}</span>
-                        <span
-                            style={{
-                                "width": "8px",
-                                "height": "8px",
-                                "borderRadius": "50%",
-                                "backgroundColor": "#10b981" if running else "#f59e0b",
-                                "display": "inline-block"
-                            }}
-                        />
-                    </button>
                 </div>
             </header>
 
@@ -871,9 +814,9 @@ def:pub OperatorApp -> JsxElement {
                         onClick={lambda { sim_minimized = False; }}
                         title="Expand Simulation Settings"
                         style={{
-                            "padding": "0.25rem 0.5rem",
-                            "backgroundColor": "#334155",
-                            "color": "#e2e8f0",
+                            "padding": "0.25rem 0.55rem",
+                            "backgroundColor": "#0284c7",
+                            "color": "white",
                             "border": "none",
                             "borderRadius": "4px",
                             "fontSize": "0.75rem",
@@ -881,24 +824,7 @@ def:pub OperatorApp -> JsxElement {
                             "cursor": "pointer"
                         }}
                     >
-                        {"▲ Settings"}
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={lambda { sim_panel_open = False; }}
-                        title="Close Simulation Panel"
-                        style={{
-                            "padding": "0.25rem 0.45rem",
-                            "backgroundColor": "transparent",
-                            "color": "#94a3b8",
-                            "border": "none",
-                            "borderRadius": "4px",
-                            "fontSize": "0.8rem",
-                            "cursor": "pointer"
-                        }}
-                    >
-                        {"✕"}
+                        {"▲ Expand"}
                     </button>
                 </div>
             )}
@@ -942,38 +868,23 @@ def:pub OperatorApp -> JsxElement {
                             </div>
                         </div>
 
-                        <div style={{"display": "flex", "alignItems": "center", "gap": "0.35rem"}}>
+                        <div style={{"display": "flex", "alignItems": "center"}}>
                             <button
                                 type="button"
                                 onClick={lambda { sim_minimized = True; }}
                                 title="Minimize to Dock"
                                 style={{
-                                    "padding": "0.2rem 0.45rem",
+                                    "padding": "0.25rem 0.6rem",
                                     "backgroundColor": "#334155",
                                     "color": "#e2e8f0",
                                     "border": "none",
                                     "borderRadius": "4px",
                                     "fontSize": "0.75rem",
+                                    "fontWeight": "600",
                                     "cursor": "pointer"
                                 }}
                             >
-                                {"—"}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={lambda { sim_panel_open = False; }}
-                                title="Close Panel"
-                                style={{
-                                    "padding": "0.2rem 0.45rem",
-                                    "backgroundColor": "#334155",
-                                    "color": "#e2e8f0",
-                                    "border": "none",
-                                    "borderRadius": "4px",
-                                    "fontSize": "0.75rem",
-                                    "cursor": "pointer"
-                                }}
-                            >
-                                {"✕"}
+                                {"— Minimize"}
                             </button>
                         </div>
                     </div>
