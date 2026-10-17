@@ -507,13 +507,3 @@ Built with pride for the **AI Hackathon 2026, powered by Jaseci Labs** at the Un
 * **Malitha Bandara** ([@MalithaBandara](https://github.com/MalithaBandara))
 * **Yasith Gurunayake** ([@yasithgurunayake](https://github.com/yasithgurunayake))
 * **Isindu Heshan** ([@isinduheshan](https://github.com/isinduheshan))
-
----
-
-<div align="center">
-
-**[⚡ Star Jaseci Labs on GitHub](https://github.com/jaseci-labs/jac)**
-
-*Turning a storm's flood of power-outage complaints into a ranked, safe action plan.*
-
-</div>
