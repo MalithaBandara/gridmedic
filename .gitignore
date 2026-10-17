@@ -1,0 +1,21 @@
+# Jac build output and persisted graph data
+.jac/
+node_modules/
+dist/
+build/
+__pycache__/
+
+# GridLab test app (lives at C:\jacsandbox\gridlab) — never commit it
+gridlab/
+.claude/launch.json
+
+# Local secrets and env
+.env
+.env.*
+
+# Editor / OS
+.vscode/
+*.log
+Thumbs.db
+desktop.ini
+.DS_Store
