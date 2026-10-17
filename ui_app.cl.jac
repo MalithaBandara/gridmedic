@@ -33,6 +33,11 @@ sv import from gm_types {
 # starts a tick while the previous one is still running.
 glob _poll: dict = {"busy": False};
 
+# The operator's chosen fault. The 1 s poll keeps calling a loadInitial whose
+# closure still sees the old (empty) selection and would reset it to the first
+# fault every tick, so the choice lives here, outside any render.
+glob _sel: dict = {"id": ""};
+
 def:pub OperatorApp -> JsxElement {
     has grid: GridView | None = None,
         counters: Counters | None = None,
@@ -46,6 +51,7 @@ def:pub OperatorApp -> JsxElement {
         selected_fault_id: str = "",
         f5_on: bool = False,
         why_text: str = "",
+        why_id: str = "",    # fault the text was written for: slow replies must not show under another fault
         selected_crew_id: str = "CREW-A",
         crew_report_text: str = "",
         action_message: str = "",
@@ -419,7 +425,7 @@ def:pub OperatorApp -> JsxElement {
                             {[
                                 <div
                                     key={f.id}
-                                    onClick={lambda { selected_fault_id = f.id; }}
+                                    onClick={lambda { _sel["id"] = f.id; selected_fault_id = f.id; }}
                                     style={{
                                         "padding": "0.6rem",
                                         "borderRadius": "6px",
@@ -552,7 +558,7 @@ def:pub OperatorApp -> JsxElement {
                                 </div>
                                 {sf.street and <div>{"Street: " + sf.street}</div>}
                                 {sf.change_note and <div style={{"color": "#fbbf24"}}>{"Updated by crew report: " + sf.change_note}</div>}
-                                {why_text and <div style={{"fontStyle": "italic"}}>{why_text}</div>}
+                                {why_text and why_id == sf.id and <div style={{"fontStyle": "italic"}}>{why_text}</div>}
                                 {for (k, ev) in enumerate(sf.evidence) {
                                     <div key={str(k)}>{"• " + ev}</div>
                                 }}
