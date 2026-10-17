@@ -481,7 +481,8 @@ def _update(fn: FaultNode, c: Fault) {
             updated_by_crew=old.updated_by_crew,
             change_note=old.change_note,
             explanation=old.explanation if same else "",
-            explanation_key=old.explanation_key if same else ""
+            explanation_key=old.explanation_key if same else "",
+            found_by=old.found_by
         )
     );
 }
@@ -545,7 +546,7 @@ impl group_faults(complaints: list[Complaint] | None = None) -> list[Fault] {
     # Suspected, unassigned faults the evidence no longer supports are dropped.
     for fn in existing {
         f = fn.fault;
-        if f.id not in matched and f.status == FaultStatus.SUSPECTED and f.crew_id == "" and not f.updated_by_crew {
+        if f.id not in matched and f.status == FaultStatus.SUSPECTED and f.crew_id == "" and not f.updated_by_crew and f.found_by == "" {
             del fn;
         }
     }

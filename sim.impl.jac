@@ -104,6 +104,10 @@ impl _clear_storm {
     st.next_complaint_idx = 0;
     st.next_fault_no = 1;
     st.next_complaint_no = 1;
+    st.f5_released = False;
+    st.pending = [];
+    st.restored_at = {};
+    st.verified = [];
     reset_grid();
 }
 
@@ -138,10 +142,17 @@ impl storm_tick(minutes: float) -> Ack {
         i += 1;
     }
     st.next_complaint_idx = i;
+    # Queued follow-ups (F5) come due like scenario complaints.
+    due: list[Complaint] = [c for c in st.pending if c.time_min <= st.clock_min];
+    if due {
+        released.extend([_copy(c) for c in due]);
+        st.pending = [c for c in st.pending if c.time_min > st.clock_min];
+    }
     # 3-6, 8
     if released {
         process_complaints(released);
     }
+    run_verifier();
     # 7. C's walkers (no-ops until WP-C3 / WP-C4)
     drain_microgrids(minutes);
     run_energiser();
@@ -229,6 +240,31 @@ impl run_energiser {
     if subs {
         subs[0] spawn Energiser();
     }
+}
+
+impl run_verifier {
+    st = sim_state();
+    todo: dict[str, float] = {k: v for (k, v) in st.restored_at.items() if k not in st.verified};
+    if len(todo) == 0 {
+        return;
+    }
+    w = Verifier(clock_min=clock(), restored=todo, complaints=[fix_complaint(c) for c in complaint_log().items]);
+    root spawn w;
+    if len(w.new_fault_ids) > 0 {
+        ranked = rank_fault_nodes(clock());
+        for f in ranked {
+            if f.id in w.new_fault_ids {
+                log_event("verify", f"{f.id}: {f.kind.name}@{f.device_id} found - {f.evidence[-1]}", f.id);
+            }
+        }
+    }
+    done: list[str] = list(st.verified);
+    for (k, t0) in todo.items() {
+        if clock() > t0 + w.window_min {
+            done.append(k);
+        }
+    }
+    st.verified = done;
 }
 
 impl run_dispatcher(minutes: float) {
@@ -449,6 +485,15 @@ impl apply_crew_report(crew_id: str, text: str) -> Fault {
     }
     done: Fault = walker_.result;
     if update.restored {
+        st = sim_state();
+        marks: dict[str, float] = dict(st.restored_at);
+        marks[done.id] = clock();
+        st.restored_at = marks;
+        if st.f5_enabled and not st.f5_released and done.kind == FaultKind.LINE_DOWN {
+            st.pending = list(st.pending) + f5_followup_complaints(clock() + 0.5);
+            st.f5_released = True;
+        }
+        log_event("verify", f"Watching the homes below {done.device_id} for new complaints after the repair", done.id);
         _restore_truth(done);
         run_energiser();
         log_event("restored", f"{done.id}: {done.kind.name}@{done.device_id} restored - crew report", done.id);

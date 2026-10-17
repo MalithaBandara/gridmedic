@@ -55,13 +55,14 @@ import from grid {
     Energiser,
     Dispatcher,
     CrewReport,
+    Verifier,
     Restorer,
     Snapshot,
     children,
     parents
 }
 import from grid_build { build_grid, reset_grid }
-import from grid_storm { generate_complaints, apply_storm_truth }
+import from grid_storm { generate_complaints, apply_storm_truth, f5_followup_complaints }
 import from agents_parse { parse_batch, parse_one, flag_duplicates }
 import from agents_group { localise_all, group_faults, build_index, section_for_landmark }
 import from agents_explain { explain_fault, fault_key, fallback_explanation }
@@ -97,6 +98,9 @@ def process_complaints(new_items: list[Complaint]) -> int;
 def submit(text: str, consumer_no: str) -> Complaint;
 def run_energiser;
 def run_dispatcher(minutes: float);
+
+"""Check restored faults for homes that keep complaining (WP-B7); a hidden second fault becomes a new FaultNode."""
+def run_verifier;
 def run_restorer;
 def drain_microgrids(minutes: float);
 
