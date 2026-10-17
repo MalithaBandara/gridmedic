@@ -24,7 +24,7 @@ def:pub ActionsPanel(
                 </span>
             </div>
             <div style={{"display": "flex", "flexDirection": "column", "gap": "0.5rem"}}>
-                {for a in actions {
+                {[
                     <div
                         key={a.id}
                         style={{
@@ -43,16 +43,16 @@ def:pub ActionsPanel(
                                     "fontSize": "0.7rem",
                                     "padding": "0.1rem 0.35rem",
                                     "borderRadius": "3px",
-                                    "backgroundColor": "#14532d" if a.safe else "#7f1d1d",
-                                    "color": "#86efac" if a.safe else "#fca5a5",
+                                    "backgroundColor": ("#14532d" if a.safe else "#7f1d1d"),
+                                    "color": ("#86efac" if a.safe else "#fca5a5"),
                                     "fontWeight": "bold"
                                 }}
                             >
-                                {"SAFE" if a.safe else "BLOCKED"}
+                                {("SAFE" if a.safe else "BLOCKED")}
                             </span>
                         </div>
                         <div style={{"fontSize": "0.75rem", "color": "#94a3b8", "marginTop": "0.25rem"}}>
-                            {a.reason if not a.safe else "Isolates fault, Feeder 2 capacity load 360 ≤ 700"}
+                            {(a.reason if not a.safe else "Isolates fault, Feeder 2 capacity load 360 <= 700")}
                         </div>
                         {a.safe and (
                             <button
@@ -62,21 +62,22 @@ def:pub ActionsPanel(
                                     "marginTop": "0.45rem",
                                     "width": "100%",
                                     "padding": "0.35rem",
-                                    "backgroundColor": "#15803d" if not a.applied else "#334155",
+                                    "backgroundColor": ("#15803d" if not a.applied else "#334155"),
                                     "color": "white",
                                     "border": "none",
                                     "borderRadius": "4px",
                                     "fontSize": "0.75rem",
                                     "fontWeight": "600",
-                                    "cursor": "pointer" if not a.applied else "default"
+                                    "cursor": ("pointer" if not a.applied else "default")
                                 }}
                                 disabled={a.applied}
                             >
-                                {"Applied ✓" if a.applied else "Apply Restoration"}
+                                {("Applied ✓" if a.applied else "Apply Restoration")}
                             </button>
                         )}
                     </div>
-                }}
+                    for a in actions
+                ]}
             </div>
         </div>;
 }

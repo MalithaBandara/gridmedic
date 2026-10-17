@@ -14,7 +14,7 @@
 |---|---|---|---|
 | A0 Scaffold, config | A | ✅ mostly | **Live smoke test not run**: `GEMINI_API_KEY` is not set on the dev machine. Every member still has to star jaseci-labs/jac. |
 | A1 Grid builder | A | ✅ merged | `grid_build.jac`, 12 tests. Adds SCHOOL (T1, T5), POLICE (T10), per-transformer streets and 5 facility landmarks (CLAUDE.md §6.1). `sim.jac` now uses it. |
-| A2 Storm + complaints | A | 🔴 not pushed | Signatures: `generate_complaints(seed=17)`, `apply_storm_truth(f5=False)`, `f5_followup_complaints(start_min)`. After merging, switch the **one** remaining `import from scenario_placeholder` line in `sim.jac` to `grid_storm`, then delete `scenario_placeholder.jac`. |
+| A2 Storm + complaints | A | ✅ merged | `grid_storm.jac` replaces the placeholder (sim import switched, placeholder deleted). `grid_storm`, `sim`, `agents_feedback` tests pass after merge. The F1-F4 acceptance check (tests 1-5, 7-9) over HTTP is still to do (A3). |
 | A3 Acceptance tests | A | 🔴 not started | CLAUDE.md §11 tests 1–15 in `tests/*_tests.jac`. Needs A1 + A2. |
 | A4 Jac Hammer deploy | A | 🔴 13:00–14:00 | |
 | A5 README | A | 🟡 draft on main | |
