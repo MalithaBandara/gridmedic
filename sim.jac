@@ -53,6 +53,7 @@ import from grid {
     Energiser,
     Dispatcher,
     CrewReport,
+    Restorer,
     Snapshot,
     children,
     parents
