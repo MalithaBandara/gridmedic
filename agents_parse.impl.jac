@@ -107,7 +107,8 @@ impl _parse_free_texts(texts: list[str]) -> dict[str, ParsedText] {
 }
 
 impl parse_batch(complaints: list[Complaint]) -> list[Complaint] {
-    global CACHE_HITS, BD_SKIPS;
+    global CACHE_HITS;
+    global BD_SKIPS;
     cache = _cache();
     known: dict[str, ParsedText] = dict(cache.entries);
     pending: dict[str, list[Complaint]] = {};
@@ -156,7 +157,8 @@ impl parse_batch(complaints: list[Complaint]) -> list[Complaint] {
 }
 
 impl parse_one(c: Complaint) -> Complaint {
-    global CACHE_HITS, BD_SKIPS;
+    global CACHE_HITS;
+    global BD_SKIPS;
     num = bd_number(c.text);
     if num {
         BD_SKIPS += 1;

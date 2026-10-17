@@ -523,7 +523,7 @@ def:pub OperatorApp -> JsxElement {
                         <div style={{"display": "flex", "gap": "0.4rem", "marginBottom": "0.25rem"}}>
                             <select
                                 value={selected_crew_id}
-                                onChange={lambda e: ChangeEvent { selected_crew_id = e.target.value; }}
+                                onChange={lambda (e: ChangeEvent) { selected_crew_id = e.target.value; }}
                                 style={{
                                     "backgroundColor": "#0f172a",
                                     "color": "#f8fafc",
@@ -541,7 +541,7 @@ def:pub OperatorApp -> JsxElement {
                             <input
                                 type="text"
                                 value={crew_report_text}
-                                onChange={lambda e: ChangeEvent { crew_report_text = e.target.value; }}
+                                onChange={lambda (e: ChangeEvent) { crew_report_text = e.target.value; }}
                                 placeholder="Field report (e.g. 'T9 fuses OK, Lake Road wire down')"
                                 style={{
                                     "flex": "1",
@@ -857,7 +857,7 @@ def:pub OperatorApp -> JsxElement {
                                 <input
                                     type="checkbox"
                                     checked={f5_on}
-                                    onChange={lambda e: ChangeEvent { f5_on = e.target.checked; }}
+                                    onChange={lambda (e: ChangeEvent) { f5_on = e.target.checked; }}
                                 />
                                 {"Hide secondary fault (T4 fuse) for verifier"}
                             </label>

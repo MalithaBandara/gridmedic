@@ -21,5 +21,10 @@ Thumbs.db
 desktop.ini
 .DS_Store
 
-# Local demo-video planning notes (not part of the submission)
+# Local demo-video planning notes and recording assets (not part of the submission)
 DEMO_PLAN.md
+motion_graphics/
+
+
+# Demo-video motion graphics (not part of the submission; keep out of the repo)
+video_assets/

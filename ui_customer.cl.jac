@@ -97,7 +97,7 @@ def:pub CustomerApp -> JsxElement {
                         <input
                             type="text"
                             value={consumer_input}
-                            onChange={lambda e: ChangeEvent { consumer_input = e.target.value; }}
+                            onChange={lambda (e: ChangeEvent) { consumer_input = e.target.value; }}
                             placeholder="Enter 10-digit Consumer No (e.g. 4512300017)"
                             style={{
                                 "flex": "1",
@@ -196,7 +196,7 @@ def:pub CustomerApp -> JsxElement {
                     <div style={{"marginBottom": "0.85rem"}}>
                         <textarea
                             value={report_text}
-                            onChange={lambda e: ChangeEvent { report_text = e.target.value; }}
+                            onChange={lambda (e: ChangeEvent) { report_text = e.target.value; }}
                             placeholder="Describe the issue (e.g., 'Wire fallen on the road near pole 23, sparks!' or 'විදුලිය නැහැ')"
                             rows={3}
                             style={{
@@ -209,7 +209,7 @@ def:pub CustomerApp -> JsxElement {
                                 "color": "#f8fafc",
                                 "fontSize": "0.88rem"
                             }}
-                        />
+                        ></textarea>
                     </div>
                     <div style={{"display": "flex", "justifyContent": "space-between", "alignItems": "center"}}>
                         <button

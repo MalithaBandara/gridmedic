@@ -73,7 +73,9 @@ def to_parsed_text(p: LlmParsed) -> ParsedText {
 }
 
 def reset_parse_stats {
-    global LLM_CALLS, CACHE_HITS, BD_SKIPS;
+    global LLM_CALLS;
+    global CACHE_HITS;
+    global BD_SKIPS;
     LLM_CALLS = 0;
     CACHE_HITS = 0;
     BD_SKIPS = 0;
