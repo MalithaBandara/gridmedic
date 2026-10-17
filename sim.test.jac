@@ -8,9 +8,11 @@ import from gm_types { Hazard, Lang }
 import from grid { ParseCache }
 
 def _mock_llm {
-    # Same answer for every batch; enough outputs for several calls.
+    # Same answer for every batch, one item per text (batches hold up to 10
+    # texts; unanswered texts fall back uncached); enough for several calls.
     item = LlmParsed(index=0, lang=Lang.EN, hazard=Hazard.WIRE_DOWN, landmark="pole 23");
-    agents_parse.llm = MockLLM(model_name="mockllm", config={"outputs": [[item] for _ in range(40)] + [item for _ in range(10)]});
+    batch = [LlmParsed(index=k, lang=Lang.EN, hazard=Hazard.WIRE_DOWN, landmark="pole 23") for k in range(10)];
+    agents_parse.llm = MockLLM(model_name="mockllm", config={"outputs": [batch for _ in range(40)] + [item for _ in range(10)]});
 }
 
 def _run_storm(ticks: int) {
