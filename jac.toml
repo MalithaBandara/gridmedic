@@ -6,8 +6,7 @@ entry-point = "main.jac"
 kind = "fullstack"
 
 [dependencies]
-byllm = "==0.6.19"
-jac-client = "==0.3.25"
+byllm = "*"
 
 [dependencies.npm]
 react = "^18.2.0"
