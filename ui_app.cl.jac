@@ -1,4 +1,4 @@
-"""GridMedic Operator Dashboard - Shell and UI Layout."""
+"""GridMedic Operator Dashboard - National Grid Control Room Theme."""
 
 import from "@jac/runtime" { Link }
 import from react { useEffect }
@@ -97,101 +97,137 @@ def:pub OperatorApp -> JsxElement {
         <div
             style={{
                 "minHeight": "100vh",
-                "backgroundColor": "#090d16",
+                "backgroundColor": "#060911",
                 "color": "#f8fafc",
-                "fontFamily": "system-ui, -apple-system, sans-serif",
+                "fontFamily": "'Inter', system-ui, -apple-system, sans-serif",
                 "display": "flex",
                 "flexDirection": "column"
             }}
         >
-            {#* TOP BAR *#}
+            {#* TOP BAR - GOVERNMENT UTILITY EXECUTIVE HEADER *#}
             <header
                 style={{
                     "display": "flex",
                     "justifyContent": "space-between",
                     "alignItems": "center",
-                    "padding": "0.75rem 1.25rem",
-                    "backgroundColor": "#0f172a",
-                    "borderBottom": "1px solid #1e293b",
+                    "padding": "0.65rem 1.25rem",
+                    "backgroundColor": "#0b1120",
+                    "borderBottom": "1px solid rgba(255, 255, 255, 0.08)",
                     "flexWrap": "wrap",
                     "gap": "0.75rem"
                 }}
             >
-                {#* Title & Clock *#}
+                {#* Institutional Identity & Sector Telemetry *#}
                 <div style={{"display": "flex", "alignItems": "center", "gap": "1rem"}}>
-                    <div>
-                        <div style={{"display": "flex", "alignItems": "center", "gap": "0.5rem"}}>
-                            <span style={{"fontSize": "1.3rem", "fontWeight": "800", "color": "#38bdf8"}}>
-                                {"GridMedic"}
-                            </span>
-                            <span
-                                style={{
-                                    "fontSize": "0.65rem",
-                                    "padding": "0.2rem 0.45rem",
-                                    "backgroundColor": "#0369a1",
-                                    "borderRadius": "4px",
-                                    "fontWeight": "600",
-                                    "letterSpacing": "0.05em"
-                                }}
-                            >
-                                {"CONTROL ROOM"}
-                            </span>
+                    <div style={{"display": "flex", "alignItems": "center", "gap": "0.75rem"}}>
+                        <div
+                            style={{
+                                "width": "34px",
+                                "height": "34px",
+                                "borderRadius": "6px",
+                                "backgroundColor": "#0f172a",
+                                "border": "1px solid rgba(56, 189, 248, 0.4)",
+                                "display": "flex",
+                                "alignItems": "center",
+                                "justifyContent": "center",
+                                "fontSize": "1.1rem"
+                            }}
+                        >
+                            {"⚡"}
                         </div>
-                        <div style={{"fontSize": "0.75rem", "color": "#94a3b8"}}>
-                            {"Moratuwa Grid Substation (SS1) · 600 Consumers"}
+                        <div>
+                            <div style={{"display": "flex", "alignItems": "center", "gap": "0.5rem"}}>
+                                <span style={{"fontSize": "1.1rem", "fontWeight": "800", "color": "#f8fafc", "letterSpacing": "0.02em"}}>
+                                    {"CEYLON ELECTRICITY BOARD"}
+                                </span>
+                                <span
+                                    style={{
+                                        "fontSize": "0.62rem",
+                                        "padding": "0.15rem 0.4rem",
+                                        "backgroundColor": "#0369a1",
+                                        "color": "white",
+                                        "borderRadius": "4px",
+                                        "fontWeight": "700",
+                                        "letterSpacing": "0.06em"
+                                    }}
+                                >
+                                    {"NATIONAL GRID CONTROL"}
+                                </span>
+                            </div>
+                            <div style={{"display": "flex", "alignItems": "center", "gap": "0.5rem", "fontSize": "0.72rem", "color": "#94a3b8", "marginTop": "0.1rem"}}>
+                                <span>{"Moratuwa Area (SS1) · 11kV Radial Distribution · 600 Consumers"}</span>
+                                <span style={{"color": "#475569"}}>{"|"}</span>
+                                <span style={{"display": "inline-flex", "alignItems": "center", "gap": "0.3rem"}}>
+                                    <span
+                                        style={{
+                                            "width": "6px",
+                                            "height": "6px",
+                                            "borderRadius": "50%",
+                                            "backgroundColor": "#ef4444" if running else "#10b981",
+                                            "display": "inline-block"
+                                        }}
+                                    />
+                                    <span style={{"color": "#fca5a5" if running else "#86efac", "fontWeight": "600"}}>
+                                        {"STORM CONTINGENCY ACTIVE" if running else "SCADA TELEMETRY: NORMAL"}
+                                    </span>
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {#* Counters *#}
-                <div style={{"display": "flex", "alignItems": "center", "gap": "0.6rem", "flexWrap": "wrap"}}>
+                {#* Minimalist Telemetry KPI Cards *#}
+                <div style={{"display": "flex", "alignItems": "center", "gap": "0.5rem", "flexWrap": "wrap"}}>
                     <div
                         style={{
-                            "backgroundColor": "#1e293b",
-                            "padding": "0.35rem 0.75rem",
+                            "backgroundColor": "#10192e",
+                            "padding": "0.4rem 0.75rem",
                             "borderRadius": "6px",
-                            "border": "1px solid #334155",
+                            "border": "1px solid rgba(255, 255, 255, 0.08)",
+                            "minWidth": "85px",
                             "textAlign": "center"
                         }}
                     >
-                        <div style={{"fontSize": "0.65rem", "color": "#94a3b8", "textTransform": "uppercase"}}>
+                        <div style={{"fontSize": "0.62rem", "color": "#94a3b8", "textTransform": "uppercase", "letterSpacing": "0.05em", "fontWeight": "600"}}>
                             {"Complaints"}
                         </div>
-                        <div style={{"fontSize": "1.1rem", "fontWeight": "700", "color": "#f8fafc"}}>
+                        <div style={{"fontSize": "1.15rem", "fontWeight": "800", "color": "#f8fafc", "marginTop": "0.1rem"}}>
                             {counters.complaints if counters else 0}
                         </div>
                     </div>
 
                     <div
                         style={{
-                            "backgroundColor": "#1e293b",
-                            "padding": "0.35rem 0.75rem",
+                            "backgroundColor": "#10192e",
+                            "padding": "0.4rem 0.75rem",
                             "borderRadius": "6px",
-                            "border": "1px solid #334155",
+                            "border": "1px solid rgba(255, 255, 255, 0.08)",
+                            "minWidth": "85px",
                             "textAlign": "center"
                         }}
                     >
-                        <div style={{"fontSize": "0.65rem", "color": "#94a3b8", "textTransform": "uppercase"}}>
+                        <div style={{"fontSize": "0.62rem", "color": "#94a3b8", "textTransform": "uppercase", "letterSpacing": "0.05em", "fontWeight": "600"}}>
                             {"Faults"}
                         </div>
-                        <div style={{"fontSize": "1.1rem", "fontWeight": "700", "color": "#f59e0b"}}>
+                        <div style={{"fontSize": "1.15rem", "fontWeight": "800", "color": "#f59e0b", "marginTop": "0.1rem"}}>
                             {counters.faults if counters else 0}
                         </div>
                     </div>
 
                     <div
                         style={{
-                            "backgroundColor": "#1e293b",
-                            "padding": "0.35rem 0.75rem",
+                            "backgroundColor": "#10192e",
+                            "padding": "0.4rem 0.75rem",
                             "borderRadius": "6px",
-                            "border": "1px solid #ef4444",
+                            "border": "1px solid rgba(239, 68, 68, 0.35)",
+                            "minWidth": "95px",
                             "textAlign": "center"
                         }}
                     >
-                        <div style={{"fontSize": "0.65rem", "color": "#fca5a5", "textTransform": "uppercase"}}>
+                        <div style={{"fontSize": "0.62rem", "color": "#fca5a5", "textTransform": "uppercase", "letterSpacing": "0.05em", "fontWeight": "600"}}>
                             {"Consumers Off"}
                         </div>
-                        <div style={{"fontSize": "1.1rem", "fontWeight": "700", "color": "#ef4444"}}>
+                        <div style={{"fontSize": "1.15rem", "fontWeight": "800", "color": "#ef4444", "marginTop": "0.1rem"}}>
                             {counters.homes_off if counters else 0}
                         </div>
                     </div>
@@ -199,57 +235,58 @@ def:pub OperatorApp -> JsxElement {
                     {#* Critical Infrastructure Indicator Card *#}
                     <div
                         style={{
-                            "backgroundColor": "#2e1065",
-                            "padding": "0.35rem 0.75rem",
+                            "backgroundColor": "#10192e",
+                            "padding": "0.4rem 0.75rem",
                             "borderRadius": "6px",
-                            "border": "1px solid #a855f7",
+                            "border": "1px solid rgba(168, 85, 247, 0.35)",
                             "textAlign": "center"
                         }}
                     >
-                        <div style={{"fontSize": "0.65rem", "color": "#d8b4fe", "textTransform": "uppercase", "fontWeight": "600"}}>
+                        <div style={{"fontSize": "0.62rem", "color": "#d8b4fe", "textTransform": "uppercase", "letterSpacing": "0.05em", "fontWeight": "600"}}>
                             {"Critical Loads"}
                         </div>
-                        <div style={{"display": "flex", "alignItems": "center", "justifyContent": "center", "gap": "0.35rem", "marginTop": "2px"}}>
+                        <div style={{"display": "flex", "alignItems": "center", "justifyContent": "center", "gap": "0.35rem", "marginTop": "0.2rem"}}>
                             <span
                                 style={{
-                                    "fontSize": "0.72rem",
-                                    "padding": "0.1rem 0.35rem",
+                                    "fontSize": "0.68rem",
+                                    "padding": "0.15rem 0.4rem",
                                     "borderRadius": "3px",
-                                    "backgroundColor": "#701a75",
+                                    "backgroundColor": "#581c87",
                                     "color": "#fdf4ff",
                                     "fontWeight": "700"
                                 }}
                             >
-                                {"🏥 Hospital"}
+                                {"🏥 Hospital (T3)"}
                             </span>
                             <span
                                 style={{
-                                    "fontSize": "0.72rem",
-                                    "padding": "0.1rem 0.35rem",
+                                    "fontSize": "0.68rem",
+                                    "padding": "0.15rem 0.4rem",
                                     "borderRadius": "3px",
                                     "backgroundColor": "#1e3a8a",
                                     "color": "#bfdbfe",
                                     "fontWeight": "700"
                                 }}
                             >
-                                {"💧 Pump"}
+                                {"💧 Pump (T6)"}
                             </span>
                         </div>
                     </div>
 
                     <div
                         style={{
-                            "backgroundColor": "#1e293b",
-                            "padding": "0.35rem 0.75rem",
+                            "backgroundColor": "#10192e",
+                            "padding": "0.4rem 0.75rem",
                             "borderRadius": "6px",
-                            "border": "1px solid #10b981",
+                            "border": "1px solid rgba(16, 185, 129, 0.35)",
+                            "minWidth": "85px",
                             "textAlign": "center"
                         }}
                     >
-                        <div style={{"fontSize": "0.65rem", "color": "#86efac", "textTransform": "uppercase"}}>
+                        <div style={{"fontSize": "0.62rem", "color": "#86efac", "textTransform": "uppercase", "letterSpacing": "0.05em", "fontWeight": "600"}}>
                             {"Restored"}
                         </div>
-                        <div style={{"fontSize": "1.1rem", "fontWeight": "700", "color": "#10b981"}}>
+                        <div style={{"fontSize": "1.15rem", "fontWeight": "800", "color": "#10b981", "marginTop": "0.1rem"}}>
                             {counters.homes_restored if counters else 0}
                         </div>
                     </div>
@@ -261,19 +298,20 @@ def:pub OperatorApp -> JsxElement {
                         to="/customer"
                         style={{
                             "padding": "0.45rem 0.85rem",
-                            "backgroundColor": "#1e293b",
-                            "border": "1px solid #38bdf8",
+                            "backgroundColor": "transparent",
+                            "border": "1px solid rgba(56, 189, 248, 0.5)",
                             "color": "#38bdf8",
                             "borderRadius": "6px",
                             "textDecoration": "none",
-                            "fontSize": "0.8rem",
+                            "fontSize": "0.78rem",
                             "fontWeight": "600",
+                            "letterSpacing": "0.02em",
                             "display": "flex",
                             "alignItems": "center",
                             "gap": "0.35rem"
                         }}
                     >
-                        {"Customer Portal ↗"}
+                        {"Public Inquiry Portal ↗"}
                     </Link>
                 </div>
             </header>
@@ -293,9 +331,9 @@ def:pub OperatorApp -> JsxElement {
                         "flex": "7",
                         "display": "flex",
                         "flexDirection": "column",
-                        "backgroundColor": "#0b1322",
-                        "borderRight": "1px solid #1e293b",
-                        "padding": "1rem",
+                        "backgroundColor": "#070c16",
+                        "borderRight": "1px solid rgba(255, 255, 255, 0.08)",
+                        "padding": "0.85rem 1rem",
                         "overflow": "auto"
                     }}
                 >
@@ -304,17 +342,20 @@ def:pub OperatorApp -> JsxElement {
                             "display": "flex",
                             "justifyContent": "space-between",
                             "alignItems": "center",
-                            "marginBottom": "0.75rem"
+                            "marginBottom": "0.65rem"
                         }}
                     >
-                        <h2 style={{"margin": "0", "fontSize": "1rem", "color": "#e2e8f0", "fontWeight": "600"}}>
-                            {"Radial Distribution Schematic (Moratuwa Substation SS1)"}
-                        </h2>
-                        <div style={{"display": "flex", "gap": "0.75rem", "fontSize": "0.75rem"}}>
-                            <span style={{"color": "#10b981"}}>{"● Energised"}</span>
-                            <span style={{"color": "#ef4444"}}>{"● Faulted / Outage"}</span>
+                        <div style={{"display": "flex", "alignItems": "center", "gap": "0.5rem"}}>
+                            <span style={{"color": "#38bdf8", "fontSize": "0.9rem"}}>{"⎇"}</span>
+                            <h2 style={{"margin": "0", "fontSize": "0.88rem", "color": "#e2e8f0", "fontWeight": "700", "letterSpacing": "0.04em", "textTransform": "uppercase"}}>
+                                {"11kV Radial Distribution Schematic — Moratuwa Substation (SS1)"}
+                            </h2>
+                        </div>
+                        <div style={{"display": "flex", "gap": "0.85rem", "fontSize": "0.72rem", "fontWeight": "600"}}>
+                            <span style={{"color": "#10b981"}}>{"● Energised (Normal)"}</span>
+                            <span style={{"color": "#ef4444"}}>{"● Fault Interrupted"}</span>
                             <span style={{"color": "#f59e0b"}}>{"● Suspected Fuse"}</span>
-                            <span style={{"color": "#38bdf8"}}>{"● Restored via Tie"}</span>
+                            <span style={{"color": "#38bdf8"}}>{"● Restored via Tie TS1"}</span>
                         </div>
                     </div>
 
@@ -323,69 +364,73 @@ def:pub OperatorApp -> JsxElement {
                         style={{
                             "flex": "1",
                             "minHeight": "420px",
-                            "backgroundColor": "#070c16",
+                            "backgroundColor": "#090f1d",
                             "borderRadius": "8px",
-                            "border": "1px solid #1e293b",
+                            "border": "1px solid rgba(255, 255, 255, 0.08)",
                             "position": "relative",
                             "overflow": "hidden",
                             "display": "flex",
                             "flexDirection": "column",
                             "justifyContent": "space-between",
-                            "padding": "1rem"
+                            "padding": "0.85rem"
                         }}
                     >
                         {#* Diagram Header & Zones overlay *#}
-                        <div style={{"display": "flex", "justifyContent": "space-between"}}>
+                        <div style={{"display": "flex", "justifyContent": "space-between", "alignItems": "flex-start", "gap": "0.5rem"}}>
                             <div
                                 style={{
-                                    "padding": "0.4rem 0.8rem",
-                                    "backgroundColor": "rgba(30, 58, 138, 0.25)",
-                                    "border": "1px dashed #3b82f6",
-                                    "borderRadius": "6px",
-                                    "fontSize": "0.75rem",
+                                    "padding": "0.35rem 0.65rem",
+                                    "backgroundColor": "rgba(2, 132, 199, 0.12)",
+                                    "border": "1px solid rgba(56, 189, 248, 0.3)",
+                                    "borderRadius": "4px",
+                                    "fontSize": "0.72rem",
                                     "color": "#93c5fd"
                                 }}
                             >
-                                <strong>{"AREA NORTH (Feeder 1 — 310 Consumers · Hospital)"}</strong>
-                                <div>{"SS1 → F1-A [SW1] F1-B [SW2] F1-C · T1, T2, T3 (Hospital), T4, T5"}</div>
+                                <strong>{"AREA NORTH · Feeder 1 (310 Consumers · Hospital)"}</strong>
+                                <div style={{"fontSize": "0.68rem", "color": "#60a5fa", "marginTop": "0.1rem"}}>
+                                    {"SS1 → F1-A [SW1 Auto-Recloser] F1-B [SW2] F1-C · Transformers T1-T5"}
+                                </div>
                             </div>
 
                             <div
                                 style={{
-                                    "padding": "0.4rem 0.8rem",
+                                    "padding": "0.35rem 0.65rem",
                                     "display": "block" if len(hazard_faults) > 0 else "none",
-                                    "backgroundColor": "rgba(220, 38, 38, 0.15)",
+                                    "backgroundColor": "rgba(220, 38, 38, 0.18)",
                                     "border": "1px solid #ef4444",
-                                    "borderRadius": "6px",
-                                    "fontSize": "0.75rem",
+                                    "borderRadius": "4px",
+                                    "fontSize": "0.72rem",
                                     "color": "#fca5a5"
                                 }}
                             >
-                                <strong>{f"⚠️ HAZARD: {hazard_faults[0].hazard_label.upper()} AT {hazard_faults[0].device_id}" if len(hazard_faults) > 0 else ""}</strong>
-                                <div>{f"{hazard_faults[0].kind_label} · {hazard_faults[0].homes_affected} homes · {hazard_faults[0].status_label}" if len(hazard_faults) > 0 else ""}</div>
+                                <strong>{f"⚠️ PUBLIC SAFETY HAZARD: {hazard_faults[0].hazard_label.upper()} AT {hazard_faults[0].device_id}" if len(hazard_faults) > 0 else ""}</strong>
+                                <div style={{"fontSize": "0.68rem", "marginTop": "0.1rem"}}>
+                                    {f"{hazard_faults[0].kind_label} · {hazard_faults[0].homes_affected} homes · {hazard_faults[0].status_label}" if len(hazard_faults) > 0 else ""}
+                                </div>
                             </div>
                         </div>
 
                         {#* Schematic Visual representation: live from get_grid *#}
-                        <div style={{"textAlign": "center", "padding": "0.5rem 0"}}>
+                        <div style={{"textAlign": "center", "padding": "0.25rem 0"}}>
                             <GridMap grid={grid} />
                         </div>
 
                         {#* Feeder 2 Zone footer *#}
                         <div
                             style={{
-                                "padding": "0.4rem 0.8rem",
-                                "backgroundColor": "rgba(16, 185, 129, 0.15)",
-                                "border": "1px dashed #10b981",
-                                "borderRadius": "6px",
-                                "fontSize": "0.75rem",
+                                "padding": "0.35rem 0.65rem",
+                                "backgroundColor": "rgba(16, 185, 129, 0.1)",
+                                "border": "1px solid rgba(16, 185, 129, 0.3)",
+                                "borderRadius": "4px",
+                                "fontSize": "0.72rem",
                                 "color": "#a7f3d0",
                                 "display": "flex",
                                 "justifyContent": "space-between"
                             }}
                         >
-                            <span><strong>{"AREA SOUTH (Feeder 2 — 290 Consumers · Water Pump):"}</strong>{" SS1 → F2-A [SW3] F2-B · T6 (Water Pump), T7, T8, T9, T10"}</span>
-                            <span>{"TS1 Tie Capacity: 700 Max"}</span>
+                            <span><strong>{"AREA SOUTH · Feeder 2 (290 Consumers · Water Pump):"}</strong>{" SS1 → F2-A [SW3] F2-B · Transformers T6-T10"}</span>
+                            <span style={{"fontWeight": "700"}}>{"TS1 Inter-Feeder Tie Capacity: 700 Consumers Max"}</span>
                         </div>
                     </div>
                 </main>
@@ -396,61 +441,64 @@ def:pub OperatorApp -> JsxElement {
                         "flex": "3",
                         "display": "flex",
                         "flexDirection": "column",
-                        "backgroundColor": "#0f172a",
-                        "padding": "1rem",
+                        "backgroundColor": "#0b1120",
+                        "padding": "0.85rem",
                         "overflowY": "auto",
-                        "gap": "1rem",
+                        "gap": "0.75rem",
                         "minWidth": "320px"
                     }}
                 >
-                    {#* 1. Ranked Faults Panel *#}
+                    {#* 1. Ranked Faults Panel (Incident Registry) *#}
                     <div
                         style={{
-                            "backgroundColor": "#1e293b",
+                            "backgroundColor": "#0f172a",
                             "borderRadius": "8px",
                             "padding": "0.85rem",
-                            "border": "1px solid #334155"
+                            "border": "1px solid rgba(255, 255, 255, 0.08)"
                         }}
                     >
-                        <div style={{"display": "flex", "justifyContent": "space-between", "alignItems": "center", "marginBottom": "0.5rem"}}>
-                            <h3 style={{"margin": "0", "fontSize": "0.95rem", "color": "#f8fafc"}}>
-                                {"Ranked Faults"}
-                            </h3>
-                            <span style={{"fontSize": "0.75rem", "color": "#94a3b8"}}>
+                        <div style={{"display": "flex", "justifyContent": "space-between", "alignItems": "center", "marginBottom": "0.6rem"}}>
+                            <div style={{"display": "flex", "alignItems": "center", "gap": "0.4rem"}}>
+                                <span style={{"fontSize": "0.8rem", "color": "#f59e0b"}}>{"⚠️"}</span>
+                                <h3 style={{"margin": "0", "fontSize": "0.82rem", "fontWeight": "700", "color": "#f8fafc", "letterSpacing": "0.04em", "textTransform": "uppercase"}}>
+                                    {"Incident Queue (Ranked Faults)"}
+                                </h3>
+                            </div>
+                            <span style={{"fontSize": "0.68rem", "color": "#94a3b8"}}>
                                 {f"{len(faults)} identified"}
                             </span>
                         </div>
 
-                        <div style={{"display": "flex", "flexDirection": "column", "gap": "0.5rem"}}>
+                        <div style={{"display": "flex", "flexDirection": "column", "gap": "0.45rem"}}>
                             {[
                                 <div
                                     key={f.id}
                                     onClick={lambda { _sel["id"] = f.id; selected_fault_id = f.id; }}
                                     style={{
-                                        "padding": "0.6rem",
+                                        "padding": "0.6rem 0.7rem",
                                         "borderRadius": "6px",
                                         "cursor": "pointer",
-                                        "backgroundColor": "#0f172a" if selected_fault_id == f.id else "#182234",
-                                        "border": "1px solid " + ("#38bdf8" if selected_fault_id == f.id else "#334155")
+                                        "backgroundColor": "#172338" if selected_fault_id == f.id else "#10192e",
+                                        "border": "1px solid " + ("#38bdf8" if selected_fault_id == f.id else "rgba(255, 255, 255, 0.06)")
                                     }}
                                 >
                                     <div style={{"display": "flex", "justifyContent": "space-between", "alignItems": "flex-start"}}>
                                         <div>
-                                            <span style={{"fontWeight": "700", "fontSize": "0.85rem", "color": "#f8fafc"}}>
+                                            <span style={{"fontWeight": "700", "fontSize": "0.82rem", "color": "#f8fafc"}}>
                                                 {f"{f.id} · {f.kind_label} @ {f.device_id}"}
                                             </span>
                                             {f.street != "" and (
-                                                <span style={{"fontSize": "0.75rem", "color": "#94a3b8", "marginLeft": "0.3rem"}}>
+                                                <span style={{"fontSize": "0.72rem", "color": "#94a3b8", "marginLeft": "0.3rem"}}>
                                                     {f"({f.street})"}
                                                 </span>
                                             )}
                                         </div>
                                         <span
                                             style={{
-                                                "fontSize": "0.7rem",
-                                                "fontWeight": "700",
+                                                "fontSize": "0.68rem",
+                                                "fontWeight": "800",
                                                 "padding": "0.15rem 0.35rem",
-                                                "borderRadius": "4px",
+                                                "borderRadius": "3px",
                                                 "backgroundColor": "#0284c7",
                                                 "color": "white"
                                             }}
@@ -459,25 +507,25 @@ def:pub OperatorApp -> JsxElement {
                                         </span>
                                     </div>
 
-                                    <div style={{"display": "flex", "gap": "0.35rem", "marginTop": "0.35rem", "flexWrap": "wrap"}}>
+                                    <div style={{"display": "flex", "gap": "0.3rem", "marginTop": "0.35rem", "flexWrap": "wrap"}}>
                                         {f.hazard_label != "" and (
-                                            <span style={{"fontSize": "0.65rem", "padding": "0.1rem 0.3rem", "borderRadius": "3px", "backgroundColor": "#7f1d1d", "color": "#fca5a5"}}>
+                                            <span style={{"fontSize": "0.65rem", "padding": "0.1rem 0.35rem", "borderRadius": "3px", "backgroundColor": "rgba(220, 38, 38, 0.25)", "border": "1px solid #ef4444", "color": "#fca5a5", "fontWeight": "700"}}>
                                                 {f"⚠️ {f.hazard_label}"}
                                             </span>
                                         )}
                                         {len(f.critical_loads) > 0 and (
-                                            <span style={{"fontSize": "0.65rem", "padding": "0.1rem 0.3rem", "borderRadius": "3px", "backgroundColor": "#581c87", "color": "#d8b4fe"}}>
+                                            <span style={{"fontSize": "0.65rem", "padding": "0.1rem 0.35rem", "borderRadius": "3px", "backgroundColor": "rgba(168, 85, 247, 0.25)", "border": "1px solid #a855f7", "color": "#e9d5ff", "fontWeight": "700"}}>
                                                 {f"🏥 {f.critical_loads[0]}"}
                                             </span>
                                         )}
-                                        <span style={{"fontSize": "0.65rem", "padding": "0.1rem 0.3rem", "borderRadius": "3px", "backgroundColor": "#1e293b", "color": "#94a3b8"}}>
+                                        <span style={{"fontSize": "0.65rem", "padding": "0.1rem 0.35rem", "borderRadius": "3px", "backgroundColor": "#1e293b", "color": "#94a3b8"}}>
                                             {f"{f.homes_affected} consumers"}
                                         </span>
-                                        <span style={{"fontSize": "0.65rem", "padding": "0.1rem 0.3rem", "borderRadius": "3px", "backgroundColor": "#14532d", "color": "#86efac"}}>
+                                        <span style={{"fontSize": "0.65rem", "padding": "0.1rem 0.35rem", "borderRadius": "3px", "backgroundColor": "rgba(16, 185, 129, 0.15)", "color": "#86efac", "fontWeight": "600"}}>
                                             {f.status_label}
                                         </span>
                                         {f.updated_by_crew and (
-                                            <span style={{"fontSize": "0.65rem", "padding": "0.1rem 0.3rem", "borderRadius": "3px", "backgroundColor": "#854d0e", "color": "#fef08a"}}>
+                                            <span style={{"fontSize": "0.65rem", "padding": "0.1rem 0.35rem", "borderRadius": "3px", "backgroundColor": "rgba(217, 119, 6, 0.25)", "border": "1px solid #d97706", "color": "#fef08a", "fontWeight": "700"}}>
                                                 {"Mind-changed ↺"}
                                             </span>
                                         )}
@@ -500,30 +548,40 @@ def:pub OperatorApp -> JsxElement {
             <footer
                 style={{
                     "display": "flex",
-                    "backgroundColor": "#0f172a",
-                    "borderTop": "1px solid #1e293b",
-                    "height": "180px",
+                    "backgroundColor": "#090d16",
+                    "borderTop": "1px solid rgba(255, 255, 255, 0.08)",
+                    "height": "190px",
                     "overflow": "hidden"
                 }}
             >
-                {#* Left 60%: Live Event Stream *#}
+                {#* Left 60%: Live SCADA Dispatch Stream *#}
                 <div
                     style={{
                         "flex": "6",
-                        "padding": "0.75rem",
-                        "borderRight": "1px solid #1e293b",
+                        "padding": "0.75rem 1rem",
+                        "borderRight": "1px solid rgba(255, 255, 255, 0.08)",
                         "overflowY": "auto"
                     }}
                 >
-                    <div style={{"fontSize": "0.75rem", "fontWeight": "700", "color": "#94a3b8", "marginBottom": "0.4rem"}}>
-                        {"LIVE EVENT STREAM"}
+                    <div style={{"display": "flex", "justifyContent": "space-between", "alignItems": "center", "marginBottom": "0.4rem"}}>
+                        <span style={{"fontSize": "0.72rem", "fontWeight": "700", "color": "#94a3b8", "letterSpacing": "0.05em", "textTransform": "uppercase"}}>
+                            {"Operational Telemetry & Event Audit Trail"}
+                        </span>
+                        <span style={{"fontSize": "0.68rem", "color": "#64748b"}}>
+                            {"Real-time UTC+05:30"}
+                        </span>
                     </div>
                     <div style={{"display": "flex", "flexDirection": "column", "gap": "0.25rem"}}>
                         {[
-                            <div key={idx} style={{"fontSize": "0.75rem", "color": "#cbd5e1", "fontFamily": "monospace"}}>
-                                <span style={{"color": "#38bdf8"}}>{f"[{e.time_min:.1f}m]"}</span>
-                                <span style={{"color": "#f59e0b", "margin": "0 0.4rem"}}>
-                                    {f"<{e.kind}>"}
+                            <div key={idx} style={{"fontSize": "0.72rem", "color": "#cbd5e1", "fontFamily": "'JetBrains Mono', monospace", "display": "flex", "alignItems": "center", "gap": "0.5rem"}}>
+                                <span style={{"color": "#38bdf8", "fontWeight": "600"}}>{f"[{e.time_min:.1f}m]"}</span>
+                                <span
+                                    style={{
+                                        "color": "#f59e0b" if e.kind == "hazard" else ("#10b981" if e.kind == "restored" else "#94a3b8"),
+                                        "fontWeight": "600"
+                                    }}
+                                >
+                                    {f"<{e.kind.upper()}>"}
                                 </span>
                                 <span>{e.text}</span>
                             </div>
@@ -536,7 +594,7 @@ def:pub OperatorApp -> JsxElement {
                 <div
                     style={{
                         "flex": "4",
-                        "padding": "0.75rem",
+                        "padding": "0.75rem 1rem",
                         "display": "flex",
                         "flexDirection": "column",
                         "justifyContent": "space-between",
@@ -544,23 +602,25 @@ def:pub OperatorApp -> JsxElement {
                     }}
                 >
                     {#* Why Reasoning *#}
-                    <div style={{"marginBottom": "0.5rem"}}>
-                        <div style={{"fontSize": "0.75rem", "fontWeight": "700", "color": "#38bdf8", "marginBottom": "0.2rem"}}>
-                            {"REASONING & EVIDENCE (Why?)"}
-                        </div>
-                        <div style={{"fontSize": "0.75rem", "color": "#94a3b8"}}>
-                            {f"Selected fault: {selected_fault_id if selected_fault_id != '' else 'None'}"}
+                    <div style={{"marginBottom": "0.4rem"}}>
+                        <div style={{"display": "flex", "justifyContent": "space-between", "alignItems": "center", "marginBottom": "0.2rem"}}>
+                            <span style={{"fontSize": "0.72rem", "fontWeight": "700", "color": "#38bdf8", "letterSpacing": "0.04em", "textTransform": "uppercase"}}>
+                                {"Incident Diagnostics (Why?)"}
+                            </span>
+                            <span style={{"fontSize": "0.7rem", "color": "#94a3b8"}}>
+                                {f"Active Target: {selected_fault_id if selected_fault_id != '' else 'None'}"}
+                            </span>
                         </div>
                         {for sf in selected_faults {
-                            <div key={sf.id} style={{"fontSize": "0.75rem", "color": "#cbd5e1", "marginTop": "0.25rem"}}>
-                                <div style={{"color": "#f8fafc", "fontWeight": "600"}}>
-                                    {f"{sf.kind_label} @ {sf.device_id} · {sf.homes_affected} homes · confidence {sf.confidence:.1f} · priority {sf.priority}"}
+                            <div key={sf.id} style={{"fontSize": "0.72rem", "color": "#cbd5e1", "marginTop": "0.2rem"}}>
+                                <div style={{"color": "#f8fafc", "fontWeight": "700"}}>
+                                    {f"{sf.kind_label} @ {sf.device_id} · {sf.homes_affected} consumers · confidence {sf.confidence:.1f} · priority {sf.priority}"}
                                 </div>
-                                {sf.street and <div>{"Street: " + sf.street}</div>}
-                                {sf.change_note and <div style={{"color": "#fbbf24"}}>{"Updated by crew report: " + sf.change_note}</div>}
-                                {why_text and why_id == sf.id and <div style={{"fontStyle": "italic"}}>{why_text}</div>}
+                                {sf.street and <div style={{"color": "#94a3b8"}}>{"Street: " + sf.street}</div>}
+                                {sf.change_note and <div style={{"color": "#fbbf24", "fontWeight": "600"}}>{"Updated by crew report: " + sf.change_note}</div>}
+                                {why_text and why_id == sf.id and <div style={{"fontStyle": "italic", "color": "#38bdf8", "marginTop": "0.15rem"}}>{why_text}</div>}
                                 {for (k, ev) in enumerate(sf.evidence) {
-                                    <div key={str(k)}>{"• " + ev}</div>
+                                    <div key={str(k)} style={{"color": "#94a3b8", "marginTop": "0.1rem"}}>{"• " + ev}</div>
                                 }}
                             </div>
                         }}
@@ -568,17 +628,17 @@ def:pub OperatorApp -> JsxElement {
 
                     {#* Crew Report Input *#}
                     <div>
-                        <div style={{"display": "flex", "gap": "0.5rem", "marginBottom": "0.3rem"}}>
+                        <div style={{"display": "flex", "gap": "0.4rem", "marginBottom": "0.3rem"}}>
                             <select
                                 value={selected_crew_id}
                                 onChange={lambda e: ChangeEvent { selected_crew_id = e.target.value; }}
                                 style={{
-                                    "backgroundColor": "#1e293b",
+                                    "backgroundColor": "#10192e",
                                     "color": "#f8fafc",
-                                    "border": "1px solid #334155",
+                                    "border": "1px solid rgba(255, 255, 255, 0.15)",
                                     "borderRadius": "4px",
-                                    "fontSize": "0.75rem",
-                                    "padding": "0.2rem"
+                                    "fontSize": "0.72rem",
+                                    "padding": "0.25rem"
                                 }}
                             >
                                 <option value="CREW-A">{"Crew A"}</option>
@@ -593,12 +653,12 @@ def:pub OperatorApp -> JsxElement {
                                 placeholder="Field report (e.g. 'T9 fuses OK, Lake Road wire down')"
                                 style={{
                                     "flex": "1",
-                                    "backgroundColor": "#1e293b",
+                                    "backgroundColor": "#10192e",
                                     "color": "#f8fafc",
-                                    "border": "1px solid #334155",
+                                    "border": "1px solid rgba(255, 255, 255, 0.15)",
                                     "borderRadius": "4px",
-                                    "fontSize": "0.75rem",
-                                    "padding": "0.2rem 0.4rem"
+                                    "fontSize": "0.72rem",
+                                    "padding": "0.25rem 0.5rem"
                                 }}
                             />
 
@@ -606,13 +666,13 @@ def:pub OperatorApp -> JsxElement {
                                 type="button"
                                 onClick={handleSubmitCrewReport}
                                 style={{
-                                    "backgroundColor": "#2563eb",
+                                    "backgroundColor": "#0284c7",
                                     "color": "white",
                                     "border": "none",
                                     "borderRadius": "4px",
-                                    "fontSize": "0.75rem",
-                                    "padding": "0.2rem 0.6rem",
-                                    "fontWeight": "600",
+                                    "fontSize": "0.72rem",
+                                    "padding": "0.25rem 0.65rem",
+                                    "fontWeight": "700",
                                     "cursor": "pointer"
                                 }}
                             >
@@ -630,12 +690,13 @@ def:pub OperatorApp -> JsxElement {
                                 }}
                                 style={{
                                     "fontSize": "0.65rem",
-                                    "padding": "0.15rem 0.35rem",
-                                    "backgroundColor": "#334155",
+                                    "padding": "0.15rem 0.4rem",
+                                    "backgroundColor": "#1e293b",
                                     "color": "#cbd5e1",
-                                    "border": "none",
+                                    "border": "1px solid rgba(255, 255, 255, 0.08)",
                                     "borderRadius": "3px",
-                                    "cursor": "pointer"
+                                    "cursor": "pointer",
+                                    "fontWeight": "600"
                                 }}
                             >
                                 {"Preset: T9 Twist"}
@@ -648,12 +709,13 @@ def:pub OperatorApp -> JsxElement {
                                 }}
                                 style={{
                                     "fontSize": "0.65rem",
-                                    "padding": "0.15rem 0.35rem",
-                                    "backgroundColor": "#334155",
+                                    "padding": "0.15rem 0.4rem",
+                                    "backgroundColor": "#1e293b",
                                     "color": "#cbd5e1",
-                                    "border": "none",
+                                    "border": "1px solid rgba(255, 255, 255, 0.08)",
                                     "borderRadius": "3px",
-                                    "cursor": "pointer"
+                                    "cursor": "pointer",
+                                    "fontWeight": "600"
                                 }}
                             >
                                 {"Preset: Pole 23 Safe"}
@@ -671,17 +733,17 @@ def:pub OperatorApp -> JsxElement {
                         "bottom": "1.25rem",
                         "right": "1.25rem",
                         "zIndex": "1000",
-                        "backgroundColor": "#0f172a",
-                        "border": "1px solid #0284c7",
+                        "backgroundColor": "#0b1120",
+                        "border": "1px solid rgba(56, 189, 248, 0.4)",
                         "borderRadius": "8px",
-                        "boxShadow": "0 10px 25px -5px rgba(0, 0, 0, 0.7)",
+                        "boxShadow": "0 10px 25px -5px rgba(0, 0, 0, 0.8)",
                         "padding": "0.45rem 0.75rem",
                         "display": "flex",
                         "alignItems": "center",
                         "gap": "0.5rem"
                     }}
                 >
-                    <div style={{"display": "flex", "alignItems": "center", "gap": "0.3rem"}}>
+                    <div style={{"display": "flex", "alignItems": "center", "gap": "0.35rem"}}>
                         <span style={{"color": "#38bdf8", "fontSize": "0.85rem"}}>{"⚡"}</span>
                         <span style={{"fontSize": "0.75rem", "fontWeight": "700", "color": "#f8fafc"}}>
                             {f"Sim: {clock_min:.1f}m"}
@@ -722,7 +784,7 @@ def:pub OperatorApp -> JsxElement {
                         onClick={handleTick}
                         style={{
                             "padding": "0.25rem 0.55rem",
-                            "backgroundColor": "#2563eb",
+                            "backgroundColor": "#0284c7",
                             "color": "white",
                             "border": "none",
                             "borderRadius": "4px",
@@ -741,9 +803,9 @@ def:pub OperatorApp -> JsxElement {
                         title="Expand Simulation Settings"
                         style={{
                             "padding": "0.25rem 0.55rem",
-                            "backgroundColor": "#0284c7",
-                            "color": "white",
-                            "border": "none",
+                            "backgroundColor": "#1e293b",
+                            "color": "#38bdf8",
+                            "border": "1px solid rgba(56, 189, 248, 0.4)",
                             "borderRadius": "4px",
                             "fontSize": "0.75rem",
                             "fontWeight": "600",
@@ -764,10 +826,10 @@ def:pub OperatorApp -> JsxElement {
                         "zIndex": "1000",
                         "width": "350px",
                         "maxWidth": "calc(100vw - 2.5rem)",
-                        "backgroundColor": "#0f172a",
-                        "border": "1px solid #38bdf8",
-                        "borderRadius": "12px",
-                        "boxShadow": "0 20px 40px rgba(0, 0, 0, 0.8)",
+                        "backgroundColor": "#0b1120",
+                        "border": "1px solid rgba(56, 189, 248, 0.4)",
+                        "borderRadius": "10px",
+                        "boxShadow": "0 20px 45px rgba(0, 0, 0, 0.85)",
                         "overflow": "hidden"
                     }}
                 >
@@ -778,18 +840,18 @@ def:pub OperatorApp -> JsxElement {
                             "justifyContent": "space-between",
                             "alignItems": "center",
                             "padding": "0.75rem 1rem",
-                            "backgroundColor": "#1e293b",
-                            "borderBottom": "1px solid #334155"
+                            "backgroundColor": "#10192e",
+                            "borderBottom": "1px solid rgba(255, 255, 255, 0.08)"
                         }}
                     >
                         <div style={{"display": "flex", "alignItems": "center", "gap": "0.4rem"}}>
-                            <span style={{"color": "#38bdf8", "fontSize": "1.1rem"}}>{"⚡"}</span>
+                            <span style={{"color": "#38bdf8", "fontSize": "1rem"}}>{"⚡"}</span>
                             <div>
-                                <div style={{"fontWeight": "700", "fontSize": "0.85rem", "color": "#f8fafc"}}>
-                                    {"Simulation Settings"}
+                                <div style={{"fontWeight": "800", "fontSize": "0.85rem", "color": "#f8fafc", "letterSpacing": "0.03em"}}>
+                                    {"Simulation Engine"}
                                 </div>
                                 <div style={{"fontSize": "0.68rem", "color": "#94a3b8"}}>
-                                    {"Scenario Injection & Time Controls"}
+                                    {"Contingency Drill & Scenario Injection"}
                                 </div>
                             </div>
                         </div>
@@ -801,11 +863,11 @@ def:pub OperatorApp -> JsxElement {
                                 title="Minimize to Dock"
                                 style={{
                                     "padding": "0.25rem 0.6rem",
-                                    "backgroundColor": "#334155",
+                                    "backgroundColor": "#1e293b",
                                     "color": "#e2e8f0",
                                     "border": "none",
                                     "borderRadius": "4px",
-                                    "fontSize": "0.75rem",
+                                    "fontSize": "0.72rem",
                                     "fontWeight": "600",
                                     "cursor": "pointer"
                                 }}
@@ -816,33 +878,33 @@ def:pub OperatorApp -> JsxElement {
                     </div>
 
                     {#* Popup Body *#}
-                    <div style={{"padding": "1rem", "display": "flex", "flexDirection": "column", "gap": "0.9rem"}}>
+                    <div style={{"padding": "1rem", "display": "flex", "flexDirection": "column", "gap": "0.85rem"}}>
                         {#* Status & Clock *#}
                         <div
                             style={{
                                 "display": "flex",
                                 "justifyContent": "space-between",
                                 "alignItems": "center",
-                                "padding": "0.5rem 0.75rem",
-                                "backgroundColor": "#182234",
+                                "padding": "0.55rem 0.75rem",
+                                "backgroundColor": "#131d31",
                                 "borderRadius": "6px",
-                                "border": "1px solid #334155"
+                                "border": "1px solid rgba(255, 255, 255, 0.08)"
                             }}
                         >
                             <div>
-                                <div style={{"fontSize": "0.65rem", "color": "#94a3b8", "textTransform": "uppercase"}}>
+                                <div style={{"fontSize": "0.65rem", "color": "#94a3b8", "textTransform": "uppercase", "letterSpacing": "0.05em", "fontWeight": "600"}}>
                                     {"Simulation Clock"}
                                 </div>
-                                <div style={{"fontSize": "1.2rem", "fontWeight": "800", "color": "#38bdf8", "fontFamily": "monospace"}}>
+                                <div style={{"fontSize": "1.2rem", "fontWeight": "800", "color": "#38bdf8", "fontFamily": "'JetBrains Mono', monospace"}}>
                                     {f"{clock_min:.1f} min"}
                                 </div>
                             </div>
                             <span
                                 style={{
-                                    "fontSize": "0.75rem",
+                                    "fontSize": "0.72rem",
                                     "padding": "0.25rem 0.55rem",
                                     "borderRadius": "4px",
-                                    "backgroundColor": "#14532d" if running else "#334155",
+                                    "backgroundColor": "rgba(16, 185, 129, 0.15)" if running else "rgba(100, 116, 139, 0.2)",
                                     "color": "#86efac" if running else "#94a3b8",
                                     "fontWeight": "700"
                                 }}
@@ -865,9 +927,9 @@ def:pub OperatorApp -> JsxElement {
                                         style={{
                                             "flex": "1",
                                             "padding": "0.4rem",
-                                            "fontSize": "0.8rem",
-                                            "borderRadius": "6px",
-                                            "border": "1px solid " + ("#38bdf8" if speed == s else "#334155"),
+                                            "fontSize": "0.78rem",
+                                            "borderRadius": "5px",
+                                            "border": "1px solid " + ("#38bdf8" if speed == s else "rgba(255, 255, 255, 0.08)"),
                                             "cursor": "pointer",
                                             "fontWeight": "700",
                                             "backgroundColor": "#0284c7" if speed == s else "#1e293b",
@@ -882,7 +944,7 @@ def:pub OperatorApp -> JsxElement {
                         </div>
 
                         {#* Optional hidden second fault (F5) *#}
-                        <label style={{"display": "flex", "alignItems": "center", "gap": "0.4rem", "fontSize": "0.75rem", "color": "#94a3b8", "margin": "0.5rem 0", "cursor": "pointer"}}>
+                        <label style={{"display": "flex", "alignItems": "center", "gap": "0.4rem", "fontSize": "0.72rem", "color": "#94a3b8", "margin": "0.35rem 0", "cursor": "pointer"}}>
                             <input
                                 type="checkbox"
                                 checked={f5_on}
@@ -899,11 +961,11 @@ def:pub OperatorApp -> JsxElement {
                                 style={{
                                     "flex": "1",
                                     "padding": "0.55rem",
-                                    "backgroundColor": "#ea580c" if running else "#16a34a",
+                                    "backgroundColor": "#ea580c" if running else "#059669",
                                     "color": "white",
                                     "border": "none",
                                     "borderRadius": "6px",
-                                    "fontSize": "0.85rem",
+                                    "fontSize": "0.82rem",
                                     "fontWeight": "700",
                                     "cursor": "pointer"
                                 }}
@@ -917,11 +979,11 @@ def:pub OperatorApp -> JsxElement {
                                 style={{
                                     "flex": "1",
                                     "padding": "0.55rem",
-                                    "backgroundColor": "#2563eb",
+                                    "backgroundColor": "#0284c7",
                                     "color": "white",
                                     "border": "none",
                                     "borderRadius": "6px",
-                                    "fontSize": "0.85rem",
+                                    "fontSize": "0.82rem",
                                     "fontWeight": "700",
                                     "cursor": "pointer"
                                 }}
@@ -937,11 +999,11 @@ def:pub OperatorApp -> JsxElement {
                             style={{
                                 "width": "100%",
                                 "padding": "0.45rem",
-                                "backgroundColor": "#1e293b",
+                                "backgroundColor": "rgba(239, 68, 68, 0.1)",
                                 "color": "#f87171",
-                                "border": "1px solid #7f1d1d",
+                                "border": "1px solid rgba(239, 68, 68, 0.35)",
                                 "borderRadius": "6px",
-                                "fontSize": "0.78rem",
+                                "fontSize": "0.75rem",
                                 "fontWeight": "600",
                                 "cursor": "pointer"
                             }}
