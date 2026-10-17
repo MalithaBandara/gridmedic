@@ -49,8 +49,8 @@ test "energiser runs on a local grid branch" {
     sw = Switch(id="SW_loc", closed=True);
     s2 = Section(id="SEC2", line_ok=True);
     t = Transformer(id="T_loc", fuse_ok=True, service_ok={"Main": True, "Broken": False});
-    h1 = Home(id="H1", street="Main");
-    h2 = Home(id="H2", street="Broken");
+    h1 = Home(id="H1", street="Main", transformer_id="T_loc");
+    h2 = Home(id="H2", street="Broken", transformer_id="T_loc");
 
     ss +>:Feeds:+> s1;
     s1 +>:Feeds:+> sw;
