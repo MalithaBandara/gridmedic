@@ -218,7 +218,7 @@ impl _grid_nodes -> list[GridNode] {
         }
         seen.add(n.id);
         out.append(n);
-        queue.extend([n ->:Feeds:->]);
+        queue.extend(children(n));
     }
     return out;
 }
@@ -243,7 +243,7 @@ impl _landmarks -> list[Landmark] {
             found[n.id] = n;
         }
         if isinstance(n, Section) {
-            for lm in [n <-:Located:<-[?:Landmark]] {
+            for lm in [x for x in [n <--] if isinstance(x, Landmark)] {
                 found[lm.id] = lm;
             }
         }
