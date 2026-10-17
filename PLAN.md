@@ -6,6 +6,39 @@
 
 ---
 
+## 0. Status board (updated 17 Oct, 10:45)
+
+**Where things stand:** `main` (4e5d52f) runs a full storm in the browser. Start Storm → auto-ticking clock → complaints parsed and traced upstream → 4 ranked faults (F1-B line down + hospital, T6 water pump, T9, T8) on a live map, with events, evidence and customer status. It still runs on **`scenario_placeholder.jac`** (B's stand-in grid and storm) until A1/A2 merge.
+
+| WP | Owner | Status | Notes / what's left |
+|---|---|---|---|
+| A0 Scaffold, config | A | ✅ mostly | **Live smoke test not run**: `GEMINI_API_KEY` is not set on the dev machine. Every member still has to star jaseci-labs/jac. |
+| A1 Grid builder | A | 🟡 branch | `origin/wp/A1` (fbce476), not merged. It also edits CLAUDE.md §5/§6.1 (adds SCHOOL on T1/T5 and POLICE on T10, and per-transformer streets). After merging, switch `sim.jac`'s `build_grid`/`reset_grid` import from `scenario_placeholder` to `grid_build`. |
+| A2 Storm + complaints | A | 🔴 not pushed | Signatures: `generate_complaints(seed=17)`, `apply_storm_truth(f5=False)`, `f5_followup_complaints(start_min)`. After merging, switch the second `sim.jac` import line, then delete `scenario_placeholder.jac`. |
+| A3 Acceptance tests | A | 🔴 not started | CLAUDE.md §11 tests 1–15 in `tests/*_tests.jac`. Needs A1 + A2. |
+| A4 Jac Hammer deploy | A | 🔴 13:00–14:00 | |
+| A5 README | A | 🟡 draft on main | |
+| B0 Contracts | B | ✅ | `api_mock.jac` was deleted at integration. Contract changes since the freeze: Localiser batch fields (B2), and the `children()`/`parents()` helpers in `grid.jac`. |
+| B1 Parser | B | ✅ | 7 MockLLM tests. Real Gemini is unverified (no key). |
+| B2 Localiser + grouping | B | ✅ | One Localiser spawn per tick: 109 complaints in 0.4 s. |
+| B3 Prioritiser | B | ✅ | Test 7 order passes. |
+| B4 Sim + real API | B | ✅ on placeholder | ~1 s per tick. `sim.LOCK` serialises the writer endpoints. Still to do: re-verify F1–F4 on A1/A2 data. |
+| B5 Crew-report feedback | B | 🔴 next | The `crew_report` endpoint currently only logs the text. Needs `agents_feedback.jac` + `grid.impl/feedback.impl.jac` (F4 mind-change, RESTORED → physical truth back to ok). |
+| B6 Explainer + noise | B | 🔴 | `explain_fault` by llm() + an `explain` endpoint. Duplicates are already logged. |
+| B7 Verifier | B | 🔴 T3 | Needs B5 and C3. |
+| C0 UI shell + routing | C | ✅ merged | `/` operator, `/customer`. |
+| C1 Grid map | C | ✅ basic | `components/GridMap.cl.jac` (built at integration) draws `GridView`. Still to do: click-to-select a device, crew animation. |
+| C2 Panels + poll loop | C | ✅ basic | Auto-tick every 1 s while running (never overlapping), live counters, faults, crews, events, Why? evidence. |
+| C3 Energiser | C | 🔴 **blocker** | `energise.impl.jac` is empty, so "homes off" stays 0 and sections never grey out. Use `children()`/`parents()`, not typed edges (§6). |
+| C4 Dispatcher | C | 🔴 | `dispatch.impl.jac` is empty, so crews stay idle. `sim.run_dispatcher` already spawns it every tick with `clock_min` and `minutes`. |
+| C5 Crew box + mind-change | C | 🟡 | The box and presets exist. Mind-change highlight waits on B5. |
+| C6 Customer page | C | 🟡 | Report + status + SMS panel are wired to the real `submit_complaint`/`get_status`. Check the 3 s poll and status-change SMS. |
+| C7 Restorer + SafetyCheck | C | 🔴 T3 | Needs C3 + C4. `sim.apply()` already executes the switching steps of a safe action. |
+
+**Critical path to the 13:00 checkpoint:** merge A1 → A2 lands → switch the two `sim.jac` imports → C3 Energiser. **To 15:00:** B5 (F4 twist) + C4 (crews move) + C5 highlight.
+
+---
+
 ## 1. How we work
 
 - **Three people (A, B, C), each running one or more agents in parallel.** One agent = one **work package (WP)** = one git branch = one worktree. A WP is sized for ~45–90 minutes of agent work.
@@ -415,19 +448,20 @@ Each WP lists: **Owns** (the only files it may edit) · **Needs** (merged WPs) �
 - **byLLM:** `sem` not docstrings; LLM returns `obj`s; `-> T | None` lets the model say "not found"; typed returns auto-retry malformed output 3×; catch `RateLimitError` from `byllm.lib`.
 - **Client entry and checks:** the client entry is lowercase `def:pub app()`. `len(x)`, not `x.length`.
 - **UI checks:** `jac browse open localhost:<port>`, then `snapshot` / `click` / `screenshot`, to verify the UI from an agent session.
+- **Graph traversal speed (measured 17 Oct):** never use `[n ->:Feeds:->]`, `[n <-:Feeds:<-]` or `[n -->[?:Type]]` on grid nodes. Each costs ~12 ms per node, and a full grid walk took 8–10 s. Use `children(n)` / `parents(n)` from `grid.jac` (0.13 s), and `visit children(here);` in walkers. Each walker **spawn** also costs ~0.2 s on the 600-home graph, so spawn once per batch, not per item (JAC_FINDINGS.md #12).
 
 ---
 
 ## 7. Checkpoint checklist
 
 - **09:50**
-  - Contracts frozen and on `main`.
-  - Every endpoint returns mocks.
-  - The smoke LLM test passes.
-  - The language bar shows Jac.
+  - ✅ Contracts frozen and on `main`.
+  - ✅ Every endpoint returns mocks (now real bodies).
+  - ❌ The smoke LLM test passes (not run: no `GEMINI_API_KEY`).
+  - ✅ The language bar shows Jac.
 - **13:00**
-  - Start Storm → complaint dots → F1–F4 on the map → ranked list. This is real data, not mocks.
-  - A3 tier-1 tests pass.
+  - 🟡 Start Storm → complaint dots → F1–F4 on the map → ranked list. Works on the placeholder scenario. Still needed: A1/A2 data and C3, so outages show.
+  - ❌ A3 tier-1 tests pass.
 - **15:00**
   - The F4 mind-change works live.
   - Crews move.
