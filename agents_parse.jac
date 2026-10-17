@@ -13,7 +13,7 @@ import re;
 import from time { sleep }
 import from concurrent.futures { Future }
 import from byllm.lib { RateLimitError }
-import from gm_types { Hazard, Lang, Complaint, ParsedText, Event }
+import from gm_types { Hazard, Lang, Complaint, ParsedText, Event, fix_parsed }
 import from grid { GridNode, Substation, Section, Home, Landmark, Feeds, Located, ParseCache, EventLog, children, parents }
 
 # ------------------------------------------------------------- LLM interface

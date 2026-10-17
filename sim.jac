@@ -31,6 +31,7 @@ import from gm_types {
     Ack,
     ActionResult,
     label_complaint,
+    fix_complaint,
     label_fault,
     label_crew
 }

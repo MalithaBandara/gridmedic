@@ -11,7 +11,7 @@ import from grid {
     children
 }
 import from grid_build { build_grid, reset_grid }
-import from scenario_placeholder { apply_storm_truth }
+import from grid_storm { apply_storm_truth }
 
 def _all_homes(ss: Substation) -> list[Home] {
     seen: set[str] = set();

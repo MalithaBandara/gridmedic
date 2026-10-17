@@ -13,7 +13,7 @@ import from grid {
     Restorer
 }
 import from grid_build { build_grid, reset_grid }
-import from scenario_placeholder { apply_storm_truth }
+import from grid_storm { apply_storm_truth }
 
 def _by_id(ss: Substation) -> dict[str, GridNode] {
     seen: set[str] = set();

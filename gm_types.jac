@@ -213,3 +213,7 @@ def crew_status_label(s: CrewStatus) -> str;
 def label_fault(f: Fault) -> Fault;
 def label_crew(c: Crew) -> Crew;
 def label_complaint(c: Complaint) -> Complaint;
+
+"""Enum fields of an obj read back from a node list/dict arrive as plain ints; turn them back into members."""
+def fix_complaint(c: Complaint) -> Complaint;
+def fix_parsed(p: ParsedText) -> ParsedText;

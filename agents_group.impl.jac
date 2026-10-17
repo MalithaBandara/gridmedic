@@ -412,7 +412,7 @@ impl find_candidates(idx: GridIndex, complaints: list[Complaint]) -> list[Fault]
 def _all_complaints -> list[Complaint] {
     out: list[Complaint] = [];
     for log in [root -->[?:ComplaintLog]] {
-        out.extend(log.items);
+        out.extend([fix_complaint(c) for c in log.items]);
     }
     return out;
 }

@@ -150,7 +150,7 @@ impl storm_tick(minutes: float) -> Ack {
 
 impl process_complaints(new_items: list[Complaint]) -> int {
     log = complaint_log();
-    earlier: list[Complaint] = list(log.items);
+    earlier: list[Complaint] = [fix_complaint(c) for c in log.items];
     # 3. parse (BD regex, cache, batched LLM) and flag duplicates
     parse_batch(new_items);
     flag_duplicates(new_items, earlier);
@@ -196,7 +196,7 @@ impl submit(text: str, consumer_no: str) -> Complaint {
     c = Complaint(id=f"U{st.next_complaint_no:04d}", text=text, time_min=st.clock_min, consumer_no=consumer_no);
     st.next_complaint_no += 1;
     log = complaint_log();
-    earlier: list[Complaint] = list(log.items);
+    earlier: list[Complaint] = [fix_complaint(c) for c in log.items];
     parse_one(c);
     flag_duplicates([c], earlier);
     label_complaint(c);
@@ -237,7 +237,7 @@ impl ranked_faults -> list[Fault] {
 }
 
 impl complaints_since(since_min: float) -> list[Complaint] {
-    return [c for c in complaint_log().items if c.time_min >= since_min];
+    return [fix_complaint(c) for c in complaint_log().items if c.time_min >= since_min];
 }
 
 impl events_since(since_min: float) -> list[Event] {

@@ -22,8 +22,9 @@ impl _fallback(index: int) -> ParsedText {
 }
 
 impl _apply(c: Complaint, p: ParsedText) {
-    c.lang = p.lang;
-    c.hazard = p.hazard;
+    q = fix_parsed(p);
+    c.lang = q.lang;
+    c.hazard = q.hazard;
     if p.landmark and not c.landmark {
         c.landmark = p.landmark;
     }
