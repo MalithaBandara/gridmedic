@@ -1,33 +1,19 @@
-"""Restoration actions and safety check panel (WP-C7) - Government Command Center Theme."""
+"""Restoration actions and safety check panel (WP-C7) - Minimalist Theme."""
 
 sv import from ..gm_types { Action }
 
-def _status_bg(safe: bool) -> str {
-    if safe {
-        return "rgba(16, 185, 129, 0.15)";
-    }
-    return "rgba(239, 68, 68, 0.15)";
-}
-
 def _status_color(safe: bool) -> str {
     if safe {
-        return "#34d399";
+        return "#10b981";
     }
-    return "#f87171";
-}
-
-def _status_border(safe: bool) -> str {
-    if safe {
-        return "1px solid rgba(16, 185, 129, 0.4)";
-    }
-    return "1px solid rgba(239, 68, 68, 0.4)";
+    return "#ef4444";
 }
 
 def _status_text(safe: bool) -> str {
     if safe {
-        return "CLEAR TO ENERGISE";
+        return "SAFE";
     }
-    return "SAFETY INTERLOCK: BLOCKED";
+    return "BLOCKED";
 }
 
 def:pub ActionsPanel(
@@ -38,53 +24,45 @@ def:pub ActionsPanel(
         <div
             style={{
                 "backgroundColor": "#0f172a",
-                "borderRadius": "8px",
-                "padding": "0.85rem",
-                "border": "1px solid rgba(255, 255, 255, 0.08)"
+                "borderRadius": "6px",
+                "padding": "0.75rem",
+                "border": "1px solid #1e293b"
             }}
         >
-            <div style={{"display": "flex", "justifyContent": "space-between", "alignItems": "center", "marginBottom": "0.6rem"}}>
-                <div style={{"display": "flex", "alignItems": "center", "gap": "0.4rem"}}>
-                    <span style={{"fontSize": "0.8rem", "color": "#10b981"}}>{"⎇"}</span>
-                    <h3 style={{"margin": "0", "fontSize": "0.82rem", "fontWeight": "700", "color": "#f8fafc", "letterSpacing": "0.04em", "textTransform": "uppercase"}}>
-                        {"Inter-Feeder Tie Schedules (TS1)"}
-                    </h3>
-                </div>
-                <span style={{"fontSize": "0.68rem", "color": "#10b981", "fontWeight": "600", "letterSpacing": "0.02em"}}>
-                    {"Safety Interlock Verified"}
+            <div style={{"display": "flex", "justifyContent": "space-between", "alignItems": "center", "marginBottom": "0.5rem"}}>
+                <h3 style={{"margin": "0", "fontSize": "0.78rem", "fontWeight": "600", "color": "#f8fafc", "letterSpacing": "0.03em", "textTransform": "uppercase"}}>
+                    {"Tie Restoration (TS1)"}
+                </h3>
+                <span style={{"fontSize": "0.68rem", "color": "#64748b"}}>
+                    {"Safety Verified"}
                 </span>
             </div>
-            <div style={{"display": "flex", "flexDirection": "column", "gap": "0.45rem"}}>
+            <div style={{"display": "flex", "flexDirection": "column", "gap": "0.4rem"}}>
                 {for a in actions {
                     <div
                         key={a.id}
                         style={{
-                            "padding": "0.6rem 0.75rem",
-                            "borderRadius": "6px",
+                            "padding": "0.5rem 0.65rem",
+                            "borderRadius": "4px",
                             "backgroundColor": "#131d31",
-                            "border": _status_border(a.safe)
+                            "border": "1px solid " + ("rgba(16, 185, 129, 0.3)" if a.safe else "rgba(239, 68, 68, 0.3)")
                         }}
                     >
                         <div style={{"display": "flex", "justifyContent": "space-between", "alignItems": "center"}}>
-                            <span style={{"fontWeight": "700", "fontSize": "0.82rem", "color": "#f8fafc"}}>
-                                {a.id + " (" + str(a.homes_restored) + " consumers restored)"}
+                            <span style={{"fontWeight": "600", "fontSize": "0.78rem", "color": "#f8fafc"}}>
+                                {a.id + " (" + str(a.homes_restored) + " homes)"}
                             </span>
                             <span
                                 style={{
-                                    "fontSize": "0.66rem",
-                                    "padding": "0.15rem 0.45rem",
-                                    "borderRadius": "4px",
-                                    "backgroundColor": _status_bg(a.safe),
+                                    "fontSize": "0.68rem",
                                     "color": _status_color(a.safe),
-                                    "border": _status_border(a.safe),
-                                    "fontWeight": "700",
-                                    "letterSpacing": "0.04em"
+                                    "fontWeight": "700"
                                 }}
                             >
                                 {_status_text(a.safe)}
                             </span>
                         </div>
-                        <div style={{"fontSize": "0.72rem", "color": "#94a3b8", "marginTop": "0.3rem", "lineHeight": "1.35"}}>
+                        <div style={{"fontSize": "0.7rem", "color": "#94a3b8", "marginTop": "0.2rem", "lineHeight": "1.3"}}>
                             {a.reason}
                         </div>
                         {a.safe and (
@@ -92,20 +70,19 @@ def:pub ActionsPanel(
                                 type="button"
                                 onClick={lambda { onApply(a.id); }}
                                 style={{
-                                    "marginTop": "0.5rem",
+                                    "marginTop": "0.4rem",
                                     "width": "100%",
-                                    "padding": "0.45rem 0.75rem",
+                                    "padding": "0.35rem 0.6rem",
                                     "backgroundColor": "#059669",
                                     "color": "white",
                                     "border": "none",
                                     "borderRadius": "4px",
-                                    "fontSize": "0.75rem",
-                                    "fontWeight": "700",
-                                    "letterSpacing": "0.03em",
+                                    "fontSize": "0.72rem",
+                                    "fontWeight": "600",
                                     "cursor": "pointer"
                                 }}
                             >
-                                {"Execute Switching Schedule (Apply)"}
+                                {"Apply Plan"}
                             </button>
                         )}
                     </div>
