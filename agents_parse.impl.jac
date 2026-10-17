@@ -186,6 +186,10 @@ impl parse_one(c: Complaint) -> Complaint {
     return c;
 }
 
+def _complaint_time_key(x: Complaint) -> float {
+    return x.time_min;
+}
+
 impl flag_duplicates(new_items: list[Complaint], earlier: list[Complaint]) -> list[Complaint] {
     last_counted: dict[str, float] = {};
     for e in earlier {
@@ -193,7 +197,7 @@ impl flag_duplicates(new_items: list[Complaint], earlier: list[Complaint]) -> li
             last_counted[e.consumer_no] = e.time_min;
         }
     }
-    for c in sorted(new_items, key=lambda x: Complaint : x.time_min) {
+    for c in sorted(new_items, key=_complaint_time_key) {
         if not c.consumer_no {
             continue;
         }

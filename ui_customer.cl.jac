@@ -252,7 +252,7 @@ def:pub CustomerApp -> JsxElement {
                         {"Real-time consumer alerts and restoration notifications."}
                     </p>
                     <div style={{"display": "flex", "flexDirection": "column", "gap": "0.35rem"}}>
-                        {[
+                        {for (idx, msg) in enumerate(sms_messages) {
                             <div
                                 key={idx}
                                 style={{
@@ -269,8 +269,7 @@ def:pub CustomerApp -> JsxElement {
                                 </span>
                                 {msg}
                             </div>
-                            for (idx, msg) in enumerate(sms_messages)
-                        ]}
+                        }}
                     </div>
                 </div>
             </div>

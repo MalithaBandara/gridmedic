@@ -374,7 +374,7 @@ def:pub OperatorApp -> JsxElement {
                         </div>
 
                         <div style={{"display": "flex", "flexDirection": "column", "gap": "0.35rem"}}>
-                            {[
+                            {for f in faults {
                                 <div
                                     key={f.id}
                                     onClick={lambda { _sel["id"] = f.id; selected_fault_id = f.id; }}
@@ -432,8 +432,7 @@ def:pub OperatorApp -> JsxElement {
                                         )}
                                     </div>
                                 </div>
-                                for f in faults
-                            ]}
+                            }}
                         </div>
                     </div>
 
@@ -470,7 +469,7 @@ def:pub OperatorApp -> JsxElement {
                         </span>
                     </div>
                     <div style={{"display": "flex", "flexDirection": "column", "gap": "0.2rem"}}>
-                        {[
+                        {for (idx, e) in enumerate(events) {
                             <div key={idx} style={{"fontSize": "0.72rem", "color": "#94a3b8", "fontFamily": "monospace", "display": "flex", "alignItems": "center", "gap": "0.4rem"}}>
                                 <span style={{"color": "#64748b"}}>{f"[{e.time_min:.1f}m]"}</span>
                                 <span style={{"color": "#cbd5e1"}}>
@@ -478,8 +477,7 @@ def:pub OperatorApp -> JsxElement {
                                 </span>
                                 <span>{e.text}</span>
                             </div>
-                            for (idx, e) in enumerate(events)
-                        ]}
+                        }}
                     </div>
                 </div>
 
@@ -797,7 +795,7 @@ def:pub OperatorApp -> JsxElement {
                                 {"Speed"}
                             </div>
                             <div style={{"display": "flex", "gap": "0.35rem"}}>
-                                {[
+                                {for s in [1, 5, 20] {
                                     <button
                                         key={s}
                                         type="button"
@@ -816,8 +814,7 @@ def:pub OperatorApp -> JsxElement {
                                     >
                                         {f"{s}×"}
                                     </button>
-                                    for s in [1, 5, 20]
-                                ]}
+                                }}
                             </div>
                         </div>
 

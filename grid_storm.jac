@@ -92,6 +92,10 @@ def apply_storm_truth(f5: bool = False) {
     }
 }
 
+def _complaint_order(c: Complaint) -> tuple[float, str, str] {
+    return (c.time_min, c.consumer_no, c.text);
+}
+
 """The storm's raw complaints for one seed, sorted by time, ids C0001..."""
 def generate_complaints(seed: int = 17) -> list[Complaint] {
     rng = Random(seed);
@@ -124,7 +128,7 @@ def generate_complaints(seed: int = 17) -> list[Complaint] {
     for (text, t) in LANDMARK_ONLY {
         out.append(Complaint(id="", text=text, time_min=t));
     }
-    out = sorted(out, key=lambda c: Complaint : (c.time_min, c.consumer_no, c.text));
+    out = sorted(out, key=_complaint_order);
     for (k, c) in enumerate(out) {
         c.id = f"C{k + 1:04d}";
     }

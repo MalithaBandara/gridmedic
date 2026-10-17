@@ -64,6 +64,10 @@ def island_phrases -> list[str] {
     return EN_TEXTS + SI_TEXTS + SINGLISH_TEXTS + TA_TEXTS + [t for (t, _m) in UNLOCATABLE];
 }
 
+def _island_order(c: Complaint) -> tuple[float, str, str] {
+    return (c.time_min, c.consumer_no, c.text);
+}
+
 """The flood for one seed, sorted by time, ids I0001..."""
 def island_complaints(seed: int = ISLAND_SEED) -> list[Complaint] {
     rng = Random(seed);
@@ -84,7 +88,7 @@ def island_complaints(seed: int = ISLAND_SEED) -> list[Complaint] {
     for (text, t) in UNLOCATABLE {
         out.append(Complaint(id="", text=text, time_min=t));
     }
-    out = sorted(out, key=lambda c: Complaint : (c.time_min, c.consumer_no, c.text));
+    out = sorted(out, key=_island_order);
     for (k, c) in enumerate(out) {
         c.id = f"I{k + 1:04d}";
     }

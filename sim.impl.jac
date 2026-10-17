@@ -36,6 +36,14 @@ impl log_event(kind: str, text: str, fault_id: str = "") {
     log.events = events;    # reassign so the change persists
 }
 
+def _complaint_time(c: Complaint) -> float {
+    return c.time_min;
+}
+
+def _fault_priority(f: Fault) -> int {
+    return -f.priority;
+}
+
 # ---------------------------------------------------------------- helpers
 impl _scenario -> list[Complaint] {
     name = _active_scenario();
@@ -46,7 +54,7 @@ impl _scenario -> list[Complaint] {
         } elif name == "island" {
             raw = island_complaints();
         }
-        _SCENARIOS[name] = sorted(raw, key=lambda c: Complaint : c.time_min);
+        _SCENARIOS[name] = sorted(raw, key=_complaint_time);
     }
     return _SCENARIOS[name];
 }
@@ -719,7 +727,7 @@ impl customer_status(consumer_no: str) -> CustomerStatus {
         }
         return CustomerStatus(consumer_no=consumer_no, has_power=False, status_text="Your report is received. We are locating the fault.");
     }
-    f: Fault = sorted(found, key=lambda x: Fault : -x.priority)[0];
+    f: Fault = sorted(found, key=_fault_priority)[0];
     if is_finished(f) {
         return CustomerStatus(consumer_no=consumer_no, has_power=home.has_power, fault_id=f.id, status_text="Power restored. Thank you for your patience.");
     }
