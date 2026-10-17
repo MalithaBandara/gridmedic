@@ -15,6 +15,7 @@ sv import from api {
     tick,
     reset,
     crew_report,
+    explain,
     apply_action
 }
 sv import from gm_types {
@@ -43,6 +44,7 @@ def:pub OperatorApp -> JsxElement {
         speed: int = 1,
         running: bool = False,
         selected_fault_id: str = "",
+        why_text: str = "",
         selected_crew_id: str = "CREW-A",
         crew_report_text: str = "",
         action_message: str = "",
@@ -59,6 +61,7 @@ def:pub OperatorApp -> JsxElement {
     async def handleTick -> None;
     async def handleSubmitCrewReport -> None;
     async def handleApplyAction(action_id: str) -> None;
+    async def loadExplanation -> None;
     async def pollTick -> None;
 
     # While a storm runs, advance the simulated clock about once a second
@@ -73,6 +76,15 @@ def:pub OperatorApp -> JsxElement {
 
     hazard_faults: list[Fault] = [f for f in faults if f.hazard_label != "" and f.status_label != "Restored" and f.status_label != "Closed"];
     selected_faults: list[Fault] = [f for f in faults if f.id == selected_fault_id];
+
+    # Ask for the 2-sentence reason when a fault is selected, and again when a
+    # crew report changes it (the server caches it until the fault changes).
+    sel_note: str = selected_faults[0].change_note if len(selected_faults) > 0 else "";
+    useEffect(lambda {
+        if selected_fault_id {
+            loadExplanation();
+        }
+    }, [selected_fault_id, sel_note]);
 
     return
         <div
@@ -539,7 +551,7 @@ def:pub OperatorApp -> JsxElement {
                                 </div>
                                 {sf.street and <div>{"Street: " + sf.street}</div>}
                                 {sf.change_note and <div style={{"color": "#fbbf24"}}>{"Updated by crew report: " + sf.change_note}</div>}
-                                {sf.explanation and <div style={{"fontStyle": "italic"}}>{sf.explanation}</div>}
+                                {why_text and <div style={{"fontStyle": "italic"}}>{why_text}</div>}
                                 {for (k, ev) in enumerate(sf.evidence) {
                                     <div key={str(k)}>{"• " + ev}</div>
                                 }}

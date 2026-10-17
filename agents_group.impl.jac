@@ -480,7 +480,8 @@ def _update(fn: FaultNode, c: Fault) {
             eta_min=old.eta_min,
             updated_by_crew=old.updated_by_crew,
             change_note=old.change_note,
-            explanation=old.explanation if same else ""
+            explanation=old.explanation if same else "",
+            explanation_key=old.explanation_key if same else ""
         )
     );
 }

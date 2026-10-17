@@ -72,6 +72,7 @@ obj Fault {
         updated_by_crew: bool = False,
         change_note: str = "",
         explanation: str = "",
+        explanation_key: str = "",    # fault state the explanation was written for
         kind_label: str = "",
         hazard_label: str = "",
         status_label: str = "";

@@ -512,6 +512,37 @@ impl _restore_truth(f: Fault) {
     }
 }
 
+impl explain(fault_id: str) -> Fault {
+    for fn in [root -->[?:FaultNode]] {
+        if fn.fault.id != fault_id {
+            continue;
+        }
+        f = fn.fault;
+        key: str = fault_key(f);
+        if f.explanation != "" and f.explanation_key == key {
+            return label_fault(f);
+        }
+        text: str = "";
+        try {
+            text = explain_fault(f).strip();
+        } except Exception as e {
+            if f.explanation_key != "fallback:" + key {
+                log_event("explain_failed", f"{f.id}: LLM explanation unavailable, using the evidence summary ({str(e)})", f.id);
+            }
+        }
+        if text != "" {
+            f.explanation = text;
+            f.explanation_key = key;
+        } else {
+            f.explanation = fallback_explanation(label_fault(f));
+            f.explanation_key = "fallback:" + key;    # retried on the next request
+        }
+        fn.fault = label_fault(f);    # reassign so the change persists
+        return fn.fault;
+    }
+    return label_fault(Fault(id="", kind=FaultKind.UNKNOWN, device_id="", homes_affected=0, change_note=f"No fault {fault_id}"));
+}
+
 impl customer_status(consumer_no: str) -> CustomerStatus {
     log_event("status_checked", f"Status checked for {consumer_no}");
     home: Home | None = None;

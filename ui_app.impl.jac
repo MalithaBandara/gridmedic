@@ -70,6 +70,13 @@ impl OperatorApp.handleApplyAction(action_id: str) -> None {
     loadInitial();
 }
 
+impl OperatorApp.loadExplanation -> None {
+    res = root spawn explain(fault_id=selected_fault_id);
+    if res.reports and len(res.reports) > 0 {
+        why_text = res.reports[0].explanation;
+    }
+}
+
 impl OperatorApp.pollTick -> None {
     _poll["busy"] = True;
     try {

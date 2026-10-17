@@ -131,6 +131,19 @@ walker:pub crew_report {
     }
 }
 
+# Why a fault was found and ranked: reports[0] is the fault with `explanation`
+# filled (2 sentences; cached until the fault changes). Added in WP-B6.
+walker:pub explain {
+    has fault_id: str = "",
+        reports: list[Fault] = [];
+
+    can run with Root entry {
+        with sim.LOCK {
+            report sim.explain(self.fault_id);
+        }
+    }
+}
+
 # Restoration actions with their safety result. One report each.
 walker:pub get_actions {
     has reports: list[Action] = [];

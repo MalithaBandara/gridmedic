@@ -64,6 +64,7 @@ import from grid_build { build_grid, reset_grid }
 import from grid_storm { generate_complaints, apply_storm_truth }
 import from agents_parse { parse_batch, parse_one, flag_duplicates }
 import from agents_group { localise_all, group_faults, build_index, section_for_landmark }
+import from agents_explain { explain_fault, fault_key, fallback_explanation }
 import from agents_feedback { parse_crew_report, to_fault_update, pick_fault }
 import from agents_priority { rank_fault_nodes, is_finished }
 
@@ -111,6 +112,9 @@ def counters -> Counters;
 def grid_view -> GridView;
 def customer_status(consumer_no: str) -> CustomerStatus;
 def crew_fault(crew_id: str) -> Fault | None;
+
+"""Why this fault was found and ranked: 2 sentences, cached on the fault until it changes. An LLM failure falls back to a text built from the evidence."""
+def explain(fault_id: str) -> Fault;
 
 """A crew's free-text report: pick the fault, parse it by LLM, let the FaultNode re-evaluate, re-rank, log. Returns the fault after the update."""
 def apply_crew_report(crew_id: str, text: str) -> Fault;

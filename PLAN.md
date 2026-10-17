@@ -24,7 +24,7 @@
 | B3 Prioritiser | B | ✅ | Test 7 order passes. |
 | B4 Sim + real API | B | ✅ | ~1 s per tick at 1×. `sim.LOCK` serialises the writer endpoints. All module tests pass on the A1 grid. |
 | B5 Crew-report feedback | B | ✅ merged | `agents_feedback.jac` (`parse_crew_report` by llm + `pick_fault` routing), `CrewReport.find` / `FaultNode.reevaluate`, `sim.apply_crew_report`, real `crew_report` endpoint. 5 unit + 6 sim MockLLM tests; test 6 passes (F4 -> SERVICE_WIRE, Lake Road, 15 homes, conf 0.9). Restored reports reset fuse_ok / line_ok / service_ok (and the recloser lockout) then run the Energiser. Added `CrewReport.homes` field. |
-| B6 Explainer + noise | B | 🔴 | `explain_fault` by llm() + an `explain` endpoint. Duplicates are already logged. |
+| B6 Explainer + noise | B | 🟡 explainer ✅ | `agents_explain.jac`: `explain_fault` by llm(), cached on the fault under `explanation_key` (a signature that ignores priority/age, so it recomputes only on real change); no-LLM fallback built from the evidence. New `explain(fault_id)` endpoint (contract addition, approved) returns the Fault with `explanation`; the Why? panel calls it on selection and after a crew report. Still open: label lone false reports "possible individual issue" and a callback list for unlocatable complaints (CLAUDE.md §8.2 step 5). |
 | B7 Verifier | B | 🔴 T3 | Needs B5 and C3. |
 | C0 UI shell + routing | C | ✅ merged | `/` operator, `/customer`. Clean control room header + minimizable floating simulation modal. |
 | C1 Grid map | C | ✅ merged | `components/GridMap.cl.jac` draws 600 homes, transformers, feeders, switches, landmarks, and live crew movement. |
