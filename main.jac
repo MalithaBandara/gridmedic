@@ -22,6 +22,7 @@ import from api {
 
 # Client-side UI & Routing
 cl {
+    import "./global.css";
     import from "@jac/runtime" { Router, Routes, Route, Navigate }
     import from .ui_app { OperatorApp }
     import from .ui_customer { CustomerApp }
