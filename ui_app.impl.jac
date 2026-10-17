@@ -3,27 +3,37 @@
 impl OperatorApp.loadInitial -> None {
     g_res = root spawn get_grid();
     if g_res.reports and len(g_res.reports) > 0 {
-        grid = g_res.reports[0];
-        counters = grid.counters;
-        clock_min = grid.clock_min;
-        running = grid.running;
-        speed = grid.speed;
+        cur_grid = g_res.reports[0];
+        grid = cur_grid;
+        counters = cur_grid.counters;
+        clock_min = cur_grid.clock_min;
+        running = cur_grid.running;
+        speed = cur_grid.speed;
     }
 
     f_res = root spawn get_faults();
-    faults = f_res.reports;
-    if len(faults) > 0 and not selected_fault_id {
-        selected_fault_id = faults[0].id;
+    if f_res.reports {
+        cur_faults = f_res.reports;
+        faults = cur_faults;
+        if len(cur_faults) > 0 and not selected_fault_id {
+            selected_fault_id = cur_faults[0].id;
+        }
     }
 
     e_res = root spawn get_events(since_min=0.0);
-    events = e_res.reports;
+    if e_res.reports {
+        events = e_res.reports;
+    }
 
     c_res = root spawn get_crews();
-    crews = c_res.reports;
+    if c_res.reports {
+        crews = c_res.reports;
+    }
 
     a_res = root spawn get_actions();
-    actions = a_res.reports;
+    if a_res.reports {
+        actions = a_res.reports;
+    }
 }
 
 impl OperatorApp.handleStartStorm -> None {

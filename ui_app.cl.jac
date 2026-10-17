@@ -26,7 +26,7 @@ sv import from gm_types {
 
 def:pub OperatorApp -> JsxElement {
     has grid: GridView | None = None,
-        counters: Counters = Counters(complaints=0, faults=0, homes_off=0, homes_restored=0),
+        counters: Counters | None = None,
         faults: list[Fault] = [],
         events: list[Event] = [],
         crews: list[Crew] = [],
@@ -134,7 +134,7 @@ def:pub OperatorApp -> JsxElement {
                             {"Complaints"}
                         </div>
                         <div style={{"fontSize": "1.1rem", "fontWeight": "700", "color": "#f8fafc"}}>
-                            {counters.complaints}
+                            {counters.complaints if counters else 0}
                         </div>
                     </div>
 
@@ -151,7 +151,7 @@ def:pub OperatorApp -> JsxElement {
                             {"Faults"}
                         </div>
                         <div style={{"fontSize": "1.1rem", "fontWeight": "700", "color": "#f59e0b"}}>
-                            {counters.faults}
+                            {counters.faults if counters else 0}
                         </div>
                     </div>
 
@@ -168,7 +168,7 @@ def:pub OperatorApp -> JsxElement {
                             {"Homes Off"}
                         </div>
                         <div style={{"fontSize": "1.1rem", "fontWeight": "700", "color": "#ef4444"}}>
-                            {counters.homes_off}
+                            {counters.homes_off if counters else 0}
                         </div>
                     </div>
 
@@ -185,7 +185,7 @@ def:pub OperatorApp -> JsxElement {
                             {"Restored"}
                         </div>
                         <div style={{"fontSize": "1.1rem", "fontWeight": "700", "color": "#10b981"}}>
-                            {counters.homes_restored}
+                            {counters.homes_restored if counters else 0}
                         </div>
                     </div>
                 </div>
