@@ -5,6 +5,9 @@ description = "GridMedic: turns a storm's flood of power-outage complaints into 
 entry-point = "main.jac"
 kind = "fullstack"
 
+[dependencies]
+byllm = ">=0.6.19"
+
 [dependencies.npm]
 react = "^18.2.0"
 react-dom = "^18.2.0"

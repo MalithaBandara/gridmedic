@@ -81,7 +81,7 @@ test "in mock mode the crew report and the Why? panel make no model call either"
     set_mode("mock");
     t9 = [f for f in ranked_faults() if f.device_id == "T9"];
     assert t9;
-    done = apply_crew_report("CREW-C", "T9 transformer is fine, fuses OK. Other streets have power. Overhead service line down on Lake Road.");
+    done = apply_crew_report("C", "T9 transformer is fine, fuses OK. Other streets have power. Overhead service line down on Lake Road.");
     assert done.kind == FaultKind.SERVICE_WIRE and done.street == "Lake Road" and done.homes_affected == 15;
     e = explain(done.id);
     assert e.explanation != "" and e.explanation_key.startswith("mock:");
