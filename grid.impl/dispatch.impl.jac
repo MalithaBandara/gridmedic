@@ -72,6 +72,27 @@ impl Dispatcher.run {
     for cn in crew_nodes {
         c = cn.crew;
         if c.status == CrewStatus.TRAVELLING {
+            # Recall a crew whose fault was dropped or closed on the way, e.g.
+            # an early fuse guess that a transmission fault then explained.
+            open_task = [fn for fn in fault_nodes if fn.fault.id == c.task_fault_id and fn.fault.status not in [FaultStatus.RESTORED, FaultStatus.CLOSED]];
+            if not open_task {
+                if elog {
+                    elog.events.append(Event(
+                        time_min=self.clock_min,
+                        kind="crew_recalled",
+                        text=f"{c.name or c.id} recalled: {c.task_fault_id} is no longer an open fault",
+                        fault_id=c.task_fault_id
+                    ));
+                }
+                c.status = CrewStatus.IDLE;
+                c.task_fault_id = "";
+                c.eta_min = 0;
+                label_crew(c);
+                if c.id in DISPATCH_TRACKER {
+                    del DISPATCH_TRACKER[c.id];
+                }
+                continue;
+            }
             info = DISPATCH_TRACKER.get(c.id);
             if info is None {
                 arr = self.clock_min + float(c.eta_min);
@@ -182,6 +203,11 @@ impl Dispatcher.run {
     unassigned: list[FaultNode] = [];
     for fn in fault_nodes {
         f = fn.fault;
+        # A transmission fault is upstream of the substation: no distribution
+        # crew can fix it, so none is sent.
+        if f.kind == FaultKind.TRANSMISSION {
+            continue;
+        }
         if f.status not in [FaultStatus.RESTORED, FaultStatus.CLOSED] and (f.crew_id == "" or f.status == FaultStatus.SUSPECTED) {
             unassigned.append(fn);
         }

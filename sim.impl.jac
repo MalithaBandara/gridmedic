@@ -38,11 +38,23 @@ impl log_event(kind: str, text: str, fault_id: str = "") {
 
 # ---------------------------------------------------------------- helpers
 impl _scenario -> list[Complaint] {
-    global _SCENARIO;
-    if not _SCENARIO {
-        _SCENARIO = sorted(generate_complaints(STORM_SEED), key=lambda c: Complaint : c.time_min);
+    name = _active_scenario();
+    if name not in _SCENARIOS {
+        raw: list[Complaint] = blackout_complaints() if name == "blackout" else generate_complaints(STORM_SEED);
+        _SCENARIOS[name] = sorted(raw, key=lambda c: Complaint : c.time_min);
     }
-    return _SCENARIO;
+    return _SCENARIOS[name];
+}
+
+# The scenario this sim applied, read back from the truth it set, so it
+# survives a server restart mid-run: a tripped TL1 means the blackout.
+impl _active_scenario -> str {
+    for tl in [root -->[?:TransmissionLine]] {
+        if not tl.line_ok {
+            return "blackout";
+        }
+    }
+    return "storm";
 }
 
 # Released complaints are fresh objects: the parser mutates them, and the
@@ -108,16 +120,25 @@ impl _clear_storm {
 }
 
 # ---------------------------------------------------------------- pipeline
-impl storm_start(speed: int) -> Ack {
+impl storm_start(speed: int, scenario: str = "storm") -> Ack {
     ensure_grid();
     _clear_storm();
     st = sim_state();
-    apply_storm_truth(st.f5_enabled);
+    blackout: bool = scenario == "blackout";
+    if blackout {
+        apply_blackout_truth();
+    } else {
+        apply_storm_truth(st.f5_enabled);
+    }
     st.running = True;
     st.speed = max(1, speed);
     run_energiser();
     run_restorer();
     n = len(_scenario());
+    if blackout {
+        log_event("storm", f"Blackout started at {st.speed}x: {n} complaints will arrive over {int(BLACKOUT_LENGTH_MIN)} minutes");
+        return Ack(ok=True, message=f"Blackout started at {st.speed}x", clock_min=st.clock_min);
+    }
     log_event("storm", f"Storm started at {st.speed}x: {n} complaints will arrive over {int(STORM_LENGTH_MIN)} minutes");
     return Ack(ok=True, message=f"Storm started at {st.speed}x", clock_min=st.clock_min);
 }
@@ -373,6 +394,13 @@ impl grid_view -> GridView {
             v.status = state_of[v.id];
         }
     }
+    edges: list[GridEdgeView] = list(snap.edges);
+    for tl in [root -->[?:TransmissionLine]] {
+        nodes.append(GridNodeView(id=tl.id, kind="transmission", x=tl.x, y=tl.y, label=f"{tl.id} · {tl.kv} kV", energised=tl.energised, has_power=tl.energised, status=state_of.get(tl.id, "normal")));
+        for ss in [x for x in [tl -->] if isinstance(x, Substation)] {
+            edges.append(GridEdgeView(from_id=tl.id, to_id=ss.id, kind="transmission"));
+        }
+    }
     for d in [root -->[?:Depot]] {
         nodes.append(GridNodeView(id=d.id, kind="depot", x=d.x, y=d.y, label=d.name or d.id));
     }
@@ -398,7 +426,7 @@ impl grid_view -> GridView {
         nodes.append(GridNodeView(id=c.id, kind="crew", x=c.x, y=c.y, label=c.name or c.id, status=c.status_label));
     }
     st = sim_state();
-    return GridView(nodes=nodes, edges=list(snap.edges), clock_min=st.clock_min, counters=counters(), running=st.running, speed=st.speed);
+    return GridView(nodes=nodes, edges=edges, clock_min=st.clock_min, counters=counters(), running=st.running, speed=st.speed);
 }
 
 impl crew_fault(crew_id: str) -> Fault | None {

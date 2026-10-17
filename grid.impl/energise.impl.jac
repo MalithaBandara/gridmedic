@@ -1,6 +1,7 @@
 """Energiser (WP-C3): who has power right now.
 
-Spawned at SS1. Floods outward over Feeds in both directions (so the tie TS1
+Spawned at SS1. SS1 is a source only while every transmission line into it
+is healthy (line_ok); with TL1 down the whole grid is dark. Floods outward over Feeds in both directions (so the tie TS1
 works either way) through closed switches, healthy sections and transformers
 with a good fuse, then sets energised / has_power from the physical truth
 (line_ok, fuse_ok, service_ok, locked_out). It may read that truth; the
@@ -45,8 +46,18 @@ def _can_enter(m: GridNode) -> bool {
 impl Energiser.spread {
     if isinstance(here, Substation) {
         nodes = _walk(here);
-        live: set[str] = set([here.id]);
-        queue: list[GridNode] = [here];
+        supply_ok: bool = True;
+        for tl in parents(here) {
+            if isinstance(tl, TransmissionLine) {
+                tl.energised = tl.line_ok;
+                supply_ok = supply_ok and tl.line_ok;
+            }
+        }
+        live: set[str] = set([here.id]) if supply_ok else set();
+        queue: list[GridNode] = [];
+        if supply_ok {
+            queue.append(here);
+        }
         while queue {
             n = queue.pop(0);
             for m in children(n) + parents(n) {

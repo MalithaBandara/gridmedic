@@ -107,7 +107,8 @@ test "upstream walk from a T5 home reaches SS1 through SW2 and SW1" {
         n = parents(n)[0];
         path.append(n.id);
     }
-    assert path == ["H-T5-001", "T5", "F1-C", "SW2", "F1-B", "SW1", "F1-A", "SS1"], path;
+    # SS1 is fed by the transmission line TL1, the top of every upstream walk.
+    assert path == ["H-T5-001", "T5", "F1-C", "SW2", "F1-B", "SW1", "F1-A", "SS1", "TL1"], path;
 }
 
 test "TS1 is a normally open tie fed from F1-C and F2-B" {

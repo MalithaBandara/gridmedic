@@ -32,6 +32,8 @@ impl build_index -> GridIndex {
             }
         } elif isinstance(n, Landmark) {
             idx.landmarks.append(n);
+        } elif isinstance(n, TransmissionLine) {
+            idx.lines.append(n);
         }
         for m in children(n) {
             if isinstance(m, GridNode) and m.id not in seen {
@@ -315,10 +317,45 @@ def _line_down(
     return _make_fault(FaultKind.LINE_DOWN, sid, homes, _critical(txs), confidence, evidence, cs);
 }
 
+# Step 1b: every feeder looks dead at once. One line down cannot silence two
+# feeders, so the supply into the substation is gone: one fault at the
+# transmission line explains every transformer.
+def _transmission(idx: GridIndex, complaints: list[Complaint]) -> Fault | None {
+    heads: list[str] = [s.id for s in idx.sections if s.id not in idx.parent_section];
+    if len(idx.lines) == 0 or len(heads) < 2 {
+        return None;
+    }
+    for sid in heads {
+        if not looks_dead(idx, sid) {
+            return None;
+        }
+    }
+    line = idx.lines[0];
+    txs = idx.transformers;
+    homes = sum([home_count(idx, t) for t in txs]);
+    reporting = sum([t.reports for t in txs]);
+    out_tx = len([t for t in txs if ratio(idx, t) >= DEAD_RATIO]);
+    head_ids = ", ".join(heads);
+    evidence: list[str] = [
+        f"All {len(heads)} feeders are out together: {head_ids}",
+        f"{reporting} of {homes} homes reported, from {out_tx} of {len(txs)} transformers",
+        f"No feeder still has supply, so the fault is upstream of the substation, on {line.id} ({line.kv} kV) or at the substation itself"
+    ];
+    confidence = min(0.95, 0.6 + 0.3 * out_tx / max(len(txs), 1));
+    cs = _complaints_for(idx, complaints, _tx_ids(txs), [s.id for s in idx.sections]);
+    return _make_fault(FaultKind.TRANSMISSION, line.id, homes, _critical(txs), confidence, evidence, cs);
+}
+
 impl find_candidates(idx: GridIndex, complaints: list[Complaint]) -> list[Fault] {
     cands: list[Fault] = [];
     covered_secs: set[str] = set();
     covered_tx: set[str] = set();
+    tf = _transmission(idx, complaints);
+    if tf is not None {
+        cands.append(tf);
+        covered_secs.update([s.id for s in idx.sections]);
+        covered_tx.update(_tx_ids(idx.transformers));
+    }
     # Hazard complaints whose landmark maps to a section
     hazard_at: dict[str, int] = {};
     for c in complaints {
@@ -542,9 +579,15 @@ impl group_faults(complaints: list[Complaint] | None = None) -> list[Fault] {
         }
     }
     # Suspected, unassigned faults the evidence no longer supports are dropped.
+    # A transmission fault explains every transformer, so the early local
+    # guesses go too, even with a crew on the way (the Dispatcher recalls it);
+    # only a fault a crew has corrected on site stays.
+    upstream: bool = len([c for c in cands if c.kind == FaultKind.TRANSMISSION]) > 0;
     for fn in existing {
         f = fn.fault;
-        if f.id not in matched and f.status == FaultStatus.SUSPECTED and f.crew_id == "" and not f.updated_by_crew {
+        stale = f.status == FaultStatus.SUSPECTED and f.crew_id == "";
+        explained = upstream and f.kind != FaultKind.TRANSMISSION and not _closed(f);
+        if f.id not in matched and not f.updated_by_crew and (stale or explained) {
             del fn;
         }
     }

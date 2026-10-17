@@ -1,6 +1,8 @@
 """Simulation pipeline (WP-B4): the simulated clock and everything one tick does.
 
 start_storm -> reset, apply ground truth, load the scenario complaints.
+  scenario "storm" (default): the F1-F4 storm. "blackout": transmission line
+  TL1 into SS1 trips and every feeder goes dark (scenario_blackout.jac).
 tick(minutes), in order:
   1. advance the clock          2. release due complaints
   3. parse_batch (LLM, cached)  4. Localiser per non-duplicate complaint
@@ -39,6 +41,7 @@ import from grid {
     GridNode,
     Feeds,
     Substation,
+    TransmissionLine,
     Section,
     Switch,
     Transformer,
@@ -62,6 +65,7 @@ import from grid {
 }
 import from grid_build { build_grid, reset_grid }
 import from grid_storm { generate_complaints, apply_storm_truth }
+import from scenario_blackout { blackout_complaints, apply_blackout_truth, BLACKOUT_LENGTH_MIN }
 import from agents_parse { parse_batch, parse_one, flag_duplicates }
 import from agents_group { localise_all, group_faults, build_index, section_for_landmark }
 import from agents_feedback { parse_crew_report, to_fault_update, pick_fault }
@@ -76,8 +80,8 @@ glob LOCK = threading.RLock();
 glob STORM_SEED: int = 17;
 glob STORM_LENGTH_MIN: float = 20.0;
 
-# The scenario is deterministic, so it is generated once per process.
-glob _SCENARIO: list[Complaint] = [];
+# Each scenario is deterministic, so it is generated once per process.
+glob _SCENARIOS: dict[str, list[Complaint]] = {};
 
 # ------------------------------------------------------------- state access
 def sim_state -> SimState;
@@ -89,7 +93,7 @@ def log_event(kind: str, text: str, fault_id: str = "");
 def clock -> float;
 
 # ---------------------------------------------------------------- pipeline
-def storm_start(speed: int) -> Ack;
+def storm_start(speed: int, scenario: str = "storm") -> Ack;
 def storm_tick(minutes: float) -> Ack;
 def storm_reset -> Ack;
 def process_complaints(new_items: list[Complaint]) -> int;
@@ -117,6 +121,7 @@ def apply_crew_report(crew_id: str, text: str) -> Fault;
 
 # ---------------------------------------------------------------- helpers
 def _scenario -> list[Complaint];
+def _active_scenario -> str;
 def _copy(c: Complaint) -> Complaint;
 def _clear_storm;
 def _fault_key(f: Fault) -> str;

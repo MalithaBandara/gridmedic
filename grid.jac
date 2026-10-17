@@ -47,6 +47,15 @@ node Substation(GridNode) {
     has name: str = "";
 }
 
+# The high-voltage line from the national grid into SS1: TL1 -> SS1 over
+# Feeds, so it sits upstream of everything and the Localiser climbs into it.
+# Also hung off root, because the walks that start at SS1 never reach it.
+node TransmissionLine(GridNode) {
+    has name: str = "",
+        kv: int = 132,
+        line_ok: bool = True;    # physical truth: only Energiser / scenario may read
+}
+
 node Section(GridNode) {
     has feeder: str = "",
         work_zone: bool = False,
