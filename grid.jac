@@ -84,6 +84,25 @@ node Home(GridNode) {
     can mark with Localiser entry;
 }
 
+# Local backup supply (solar + battery or diesel) hung off the transformer it
+# serves: Transformer -> Microgrid over a Located edge, never Feeds, so it is
+# not part of the radial network. It can only run islanded: `isolated` is the
+# anti-backfeed isolator on the transformer's HV side, and it must be open
+# before `islanded` is set, or the microgrid would energise the dead line.
+# critical_only: it carries just the landmark (a hospital), not the homes.
+node Microgrid(GridNode) {
+    has name: str = "",
+        kind: str = "SOLAR_BATTERY",    # SOLAR_BATTERY | DIESEL_BATTERY
+        capacity_homes: int = 0,
+        critical_only: bool = False,
+        landmark_id: str = "",
+        battery_max: int = 0,           # minutes of supply at full load
+        battery_min: int = 0,           # minutes left
+        isolated: bool = False,
+        islanded: bool = False,
+        supplying: bool = False;        # set by the Energiser
+}
+
 node Depot(GridNode) {
     has name: str = "";
 }
