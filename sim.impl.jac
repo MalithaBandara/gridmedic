@@ -342,7 +342,22 @@ impl grid_view -> GridView {
     for d in [root -->[?:Depot]] {
         nodes.append(GridNodeView(id=d.id, kind="depot", x=d.x, y=d.y, label=d.name or d.id));
     }
+    # Landmarks hang off root or point at their Section with a Located edge
+    # (grid_build does the latter), so look in both places.
+    marks: dict[str, Landmark] = {};
     for lm in [root -->[?:Landmark]] {
+        marks[lm.id] = lm;
+    }
+    for n in _all_grid_nodes() {
+        if isinstance(n, Section) {
+            for x in [n <--] {
+                if isinstance(x, Landmark) {
+                    marks[x.id] = x;
+                }
+            }
+        }
+    }
+    for lm in marks.values() {
         nodes.append(GridNodeView(id=lm.id, kind="landmark", x=lm.x, y=lm.y, label=lm.name, parent_id=lm.section_id, status=state_of.get(lm.section_id, "normal")));
     }
     for c in crews() {

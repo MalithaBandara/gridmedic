@@ -117,7 +117,7 @@ def:pub OperatorApp -> JsxElement {
                             </span>
                         </div>
                         <div style={{"fontSize": "0.75rem", "color": "#94a3b8"}}>
-                            {"Moratuwa Grid Substation (SS1) · 600 Homes"}
+                            {"Moratuwa Grid Substation (SS1) · 600 Consumers"}
                         </div>
                     </div>
                 </div>
@@ -168,10 +168,51 @@ def:pub OperatorApp -> JsxElement {
                         }}
                     >
                         <div style={{"fontSize": "0.65rem", "color": "#fca5a5", "textTransform": "uppercase"}}>
-                            {"Homes Off"}
+                            {"Consumers Off"}
                         </div>
                         <div style={{"fontSize": "1.1rem", "fontWeight": "700", "color": "#ef4444"}}>
                             {counters.homes_off if counters else 0}
+                        </div>
+                    </div>
+
+                    {#* Critical Infrastructure Indicator Card *#}
+                    <div
+                        style={{
+                            "backgroundColor": "#2e1065",
+                            "padding": "0.35rem 0.75rem",
+                            "borderRadius": "6px",
+                            "border": "1px solid #a855f7",
+                            "textAlign": "center"
+                        }}
+                    >
+                        <div style={{"fontSize": "0.65rem", "color": "#d8b4fe", "textTransform": "uppercase", "fontWeight": "600"}}>
+                            {"Critical Loads"}
+                        </div>
+                        <div style={{"display": "flex", "alignItems": "center", "justifyContent": "center", "gap": "0.35rem", "marginTop": "2px"}}>
+                            <span
+                                style={{
+                                    "fontSize": "0.72rem",
+                                    "padding": "0.1rem 0.35rem",
+                                    "borderRadius": "3px",
+                                    "backgroundColor": "#701a75",
+                                    "color": "#fdf4ff",
+                                    "fontWeight": "700"
+                                }}
+                            >
+                                {"🏥 Hospital"}
+                            </span>
+                            <span
+                                style={{
+                                    "fontSize": "0.72rem",
+                                    "padding": "0.1rem 0.35rem",
+                                    "borderRadius": "3px",
+                                    "backgroundColor": "#1e3a8a",
+                                    "color": "#bfdbfe",
+                                    "fontWeight": "700"
+                                }}
+                            >
+                                {"💧 Pump"}
+                            </span>
                         </div>
                     </div>
 
@@ -284,7 +325,7 @@ def:pub OperatorApp -> JsxElement {
                                     "color": "#93c5fd"
                                 }}
                             >
-                                <strong>{"AREA NORTH (Feeder 1 — 310 Homes)"}</strong>
+                                <strong>{"AREA NORTH (Feeder 1 — 310 Consumers · Hospital)"}</strong>
                                 <div>{"SS1 → F1-A [SW1] F1-B [SW2] F1-C · T1, T2, T3 (Hospital), T4, T5"}</div>
                             </div>
 
@@ -322,7 +363,7 @@ def:pub OperatorApp -> JsxElement {
                                 "justifyContent": "space-between"
                             }}
                         >
-                            <span><strong>{"AREA SOUTH (Feeder 2 — 290 Homes):"}</strong>{" SS1 → F2-A [SW3] F2-B · T6 (Water Pump), T7, T8, T9, T10"}</span>
+                            <span><strong>{"AREA SOUTH (Feeder 2 — 290 Consumers · Water Pump):"}</strong>{" SS1 → F2-A [SW3] F2-B · T6 (Water Pump), T7, T8, T9, T10"}</span>
                             <span>{"TS1 Tie Capacity: 700 Max"}</span>
                         </div>
                     </div>
@@ -409,7 +450,7 @@ def:pub OperatorApp -> JsxElement {
                                             </span>
                                         )}
                                         <span style={{"fontSize": "0.65rem", "padding": "0.1rem 0.3rem", "borderRadius": "3px", "backgroundColor": "#1e293b", "color": "#94a3b8"}}>
-                                            {f"{f.homes_affected} homes"}
+                                            {f"{f.homes_affected} consumers"}
                                         </span>
                                         <span style={{"fontSize": "0.65rem", "padding": "0.1rem 0.3rem", "borderRadius": "3px", "backgroundColor": "#14532d", "color": "#86efac"}}>
                                             {f.status_label}
@@ -505,7 +546,7 @@ def:pub OperatorApp -> JsxElement {
                                 >
                                     <div style={{"display": "flex", "justifyContent": "space-between", "alignItems": "center"}}>
                                         <span style={{"fontWeight": "700", "fontSize": "0.8rem", "color": "#f8fafc"}}>
-                                            {f"{a.id} ({a.homes_restored} homes)"}
+                                            {f"{a.id} ({a.homes_restored} consumers)"}
                                         </span>
                                         <span
                                             style={{

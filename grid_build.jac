@@ -130,10 +130,8 @@ def build_grid -> Substation {
     for (n, sid, x, y, critical, streets) in TRANSFORMERS {
         _transformer(secs[sid], n, x, y, critical, streets);
     }
-    # Under root too: sim.grid_view finds landmarks there for the map.
     for (lid, name, sid, x, y) in LANDMARKS {
         lm = Landmark(id=lid, name=name, section_id=sid, x=x, y=y);
-        root ++> lm;
         lm +>:Located:+> secs[sid];
     }
 
