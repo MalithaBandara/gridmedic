@@ -681,18 +681,24 @@ def:pub OperatorApp -> JsxElement {
                         id="sim-dock-settings-btn"
                         type="button"
                         onClick={lambda { sim_minimized = False; }}
-                        title="Expand Simulation Settings"
+                        title="Expand Simulation Controls"
                         style={{
-                            "padding": "0.2rem 0.5rem",
+                            "display": "flex",
+                            "alignItems": "center",
+                            "justifyContent": "center",
+                            "width": "26px",
+                            "height": "24px",
+                            "padding": "0",
                             "backgroundColor": "#1e293b",
                             "color": "#cbd5e1",
                             "border": "1px solid #334155",
                             "borderRadius": "3px",
-                            "fontSize": "0.72rem",
                             "cursor": "pointer"
                         }}
                     >
-                        {"Controls"}
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{"display": "block"}}>
+                            <polyline points="18 15 12 9 6 15" />
+                        </svg>
                     </button>
                 </div>
             )}
@@ -731,18 +737,24 @@ def:pub OperatorApp -> JsxElement {
                         <button
                             type="button"
                             onClick={lambda { sim_minimized = True; }}
-                            title="Minimize to Dock"
+                            title="Minimize"
                             style={{
-                                "padding": "0.2rem 0.5rem",
+                                "display": "flex",
+                                "alignItems": "center",
+                                "justifyContent": "center",
+                                "width": "24px",
+                                "height": "24px",
+                                "padding": "0",
                                 "backgroundColor": "transparent",
                                 "color": "#94a3b8",
                                 "border": "1px solid #334155",
                                 "borderRadius": "3px",
-                                "fontSize": "0.68rem",
                                 "cursor": "pointer"
                             }}
                         >
-                            {"Minimize"}
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{"display": "block"}}>
+                                <line x1="4" y1="12" x2="20" y2="12" />
+                            </svg>
                         </button>
                     </div>
 
