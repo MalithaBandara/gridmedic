@@ -39,14 +39,19 @@
 
 ### 0.1 Live Gemini verification (17 Oct) and quota rule
 
-**Quota rule (also at the top of CLAUDE.md):** the key allows ~500 requests/day. No agent makes a real Gemini call without the user's explicit "go" for that run, with the request count stated first. Tests use `MockLLM`. About 2 requests used so far today.
+**Quota rule (also at the top of CLAUDE.md):** the key allows ~500 requests/day. No agent makes a real Gemini call without the user's explicit "go" for that run, with the request count stated first. Tests use `MockLLM`. About 11 or more requests used so far today (2 + the 9+ below); check AI Studio for the exact figure.
 
 | Check | Script | Requests | Result |
 |---|---|---|---|
 | Typed batched parse, English + 5 Sinhala phrases | `scripts/smoke_llm.jac` (rewritten from 6 calls to **1** batched `parse_texts`) | 1 | 6 results for 6 inputs, mapped back by `index`. 5/6 hazards matched. Sinhala wire-down, sparks and transformer noise were correct, and the two plain "no power" phrases were `NONE`. The one miss ("Wire fallen ... pole 23, sparks!") came back `SPARKS`, while the script expected `WIRE_DOWN`. The text contains both, and CLAUDE.md test 2 accepts either, so it is a loose expectation, not a parser bug. `pole 23` was extracted as the landmark. |
 | F4 twist: `parse_crew_report` on the T9 crew report | `scripts/smoke_feedback.jac` (new) | 1 | PASS: `device_ok=True`, `SERVICE_WIRE`, street `Lake Road`, `restored=False`, `fault_id` copied correctly. |
+| Minimal live pass: storm parse, crew report, Explainer, customer Sinhala complaint | `scripts/smoke_live.jac` (new, run in a scratch copy of the repo) | 9 or more (estimated 5) | PASS. Storm: 6 LLM calls plus 65 cache hits, found F1–F4 (F1 `LINE_DOWN` at F1-B, 205 homes, hazard `Wire down`, prio 1745; T6 588; T9 `TX_FUSE` conf 0.4; T8 78). Crew report at Pole 23 gave F1 `CONFIRMED`, ETA 90. Explainer returned a `LIVE` explanation, not the fallback. A customer Sinhala complaint parsed as `SI`. |
 
-**Still not tested live (ask before running):** `explain_fault` (Explainer), and a full uncached storm through `jac start` (~15 batched calls). Both run on MockLLM or the evidence fallback in tests.
+**Estimate correction:** the storm cost 6 calls, not 2, because complaints are released tick by tick and each tick parses only its newly seen texts, so the 15 distinct strings arrived in several small batches. Possible saving: parse all distinct storm texts in one call at `start_storm`, which would take it to about 2 (touches `sim`, not done). byllm internal retries are not counted in the 6.
+
+**Cache caveat:** the warmed `ParseCache` lives in the scratch copy used for the run, not in the repo or the dev server, so a storm on the dev server still starts cold.
+
+**Live-verified now:** structured output, Sinhala hazards, batched parse, the F4 crew report (`smoke_feedback.jac`), a Pole 23 crew report, the live Explainer, a customer Sinhala parse, and F1 hazard priority after a live parse. **Not live-tested:** the other crew presets (T8, T6, F1 repaired), rate-limit retry and fallback, and Jac Hammer env var wiring.
 
 **Run note:** `GEMINI_API_KEY` set with `$env:` in a terminal tab is not visible to the agent's shell. Without it, a run fails with `AuthenticationError` before using quota. The user ran both scripts in their own tab.
 

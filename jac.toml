@@ -36,3 +36,4 @@ default_model = "gemini/gemini-3.5-flash-lite"
 # One process per test file: files in a single `jac test -d tests/` run share one
 # persisted graph and interfere. Stop any dev server first (jac clean needs the db).
 test = "jac clean --all --force && jac test tests/acceptance_tests.jac && jac clean --all --force && jac test tests/noise_tests.jac && jac clean --all --force && jac test tests/dispatch_tests.jac && jac clean --all --force && jac test tests/energise_tests.jac && jac clean --all --force && jac test tests/microgrid_tests.jac && jac clean --all --force && jac test tests/safety_tests.jac"
+

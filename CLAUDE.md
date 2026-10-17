@@ -1,5 +1,12 @@
 # GridMedic — Project Brief for Coding Agents
 
+> ## ⛔ GEMINI QUOTA RULE — READ FIRST
+> The Gemini API key allows only **~500 requests per day**. Coding agents must **NEVER** make a real Gemini call without the user's **explicit permission in chat, for that specific run**. This covers `jac run scripts/smoke_llm.jac`, `jac start` with live storms or crew reports, the Explainer, the customer page, and any script or test that reaches `by llm()` unmocked.
+> - Always ask first, and say how many requests the run will use (a full uncached storm is ~15 batched calls).
+> - Use `MockLLM` in tests, and rely on `ParseCache` and the Explainer's evidence fallback.
+> - Never start the dev server and click through flows that call the LLM unless the user said so.
+> - Never print, log or commit the key.
+
 > Read this whole file before writing any code. It is the single source of truth for this project.
 > If anything here conflicts with what the team tells you in chat, ask before proceeding.
 

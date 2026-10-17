@@ -121,7 +121,7 @@ def:pub GridMap(grid: GridView | None) -> JsxElement {
                         <line x1="34" y1={n.y} x2={n.x} y2={n.y} stroke={status_colour(n.status, LIVE if n.energised else DEAD)} strokeWidth="6"/>
                         <path d={f"M{n.x - 8} {n.y + 12} L{n.x} {n.y - 14} L{n.x + 8} {n.y + 12} M{n.x - 10} {n.y - 6} L{n.x + 10} {n.y - 6}"} fill="none" stroke={status_colour(n.status, "#94a3b8")} strokeWidth="1.5"/>
                         <text x={n.x} y={n.y - 20} fill={status_colour(n.status, "#cbd5e1")} fontSize="8" fontWeight="bold" textAnchor="middle">{n.label}</text>
-                        {(n.status != "normal") and <text x={n.x} y={n.y + 26} fill={status_colour(n.status, FAULT)} fontSize="9" fontWeight="bold" textAnchor="middle">{"⚠ supply lost"}</text>}
+                        {(n.status != "normal") and <text x={n.x} y={n.y + 26} fill={status_colour(n.status, FAULT)} fontSize="9" fontWeight="bold" textAnchor="middle">{"SUPPLY LOST"}</text>}
                     </g>
                 } elif n.kind == "microgrid" {
                     <g key={n.id}>
@@ -137,7 +137,7 @@ def:pub GridMap(grid: GridView | None) -> JsxElement {
                     </g>
                 } elif n.kind == "landmark" and n.id.startswith("POLE") {
                     if n.status != "normal" {
-                        <text key={n.id} x={n.x} y={n.y - 16} fill={FAULT} fontSize="10" fontWeight="700" textAnchor="middle">{"⚠ " + n.label}</text>
+                        <text key={n.id} x={n.x} y={n.y - 16} fill={FAULT} fontSize="9" fontWeight="700" textAnchor="middle">{n.label + " [FAULT]"}</text>
                     }
                 } elif n.kind == "landmark" {
                     <text key={n.id} x={n.x} y={n.y} fill={(FAULT if not n.has_power else "#64748b")} fontSize="6.5" textAnchor="middle">{n.label}</text>

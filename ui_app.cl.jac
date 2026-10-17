@@ -255,7 +255,7 @@ def:pub OperatorApp -> JsxElement {
                             "gap": "0.3rem"
                         }}
                     >
-                        {"Customer Portal ↗"}
+                        {"Customer Portal"}
                     </Link>
                 </div>
             </header>
@@ -293,10 +293,10 @@ def:pub OperatorApp -> JsxElement {
                             {"Distribution Network Schematic (SS1)"}
                         </h2>
                         <div style={{"display": "flex", "gap": "0.85rem", "fontSize": "0.72rem"}}>
-                            <span style={{"color": "#10b981"}}>{"● Normal"}</span>
-                            <span style={{"color": "#ef4444"}}>{"● Outage"}</span>
-                            <span style={{"color": "#f59e0b"}}>{"● Suspected"}</span>
-                            <span style={{"color": "#64748b"}}>{"● Tie Line"}</span>
+                            <span style={{"color": "#10b981"}}>{"Normal"}</span>
+                            <span style={{"color": "#ef4444"}}>{"Outage"}</span>
+                            <span style={{"color": "#f59e0b"}}>{"Suspected"}</span>
+                            <span style={{"color": "#64748b"}}>{"Tie Line"}</span>
                         </div>
                     </div>
 
@@ -331,7 +331,7 @@ def:pub OperatorApp -> JsxElement {
                                     "color": "#fca5a5"
                                 }}
                             >
-                                <strong>{f"⚠️ HAZARD: {hazard_faults[0].hazard_label.upper()} AT {hazard_faults[0].device_id}"}</strong>
+                                <strong>{f"HAZARD: {hazard_faults[0].hazard_label.upper()} AT {hazard_faults[0].device_id}"}</strong>
                                 <span>{f" · {hazard_faults[0].homes_affected} homes affected"}</span>
                             </div>
                         )}
@@ -411,7 +411,7 @@ def:pub OperatorApp -> JsxElement {
                                     <div style={{"display": "flex", "gap": "0.3rem", "marginTop": "0.3rem", "flexWrap": "wrap"}}>
                                         {f.hazard_label != "" and (
                                             <span style={{"fontSize": "0.65rem", "color": "#ef4444", "fontWeight": "600"}}>
-                                                {f"⚠️ {f.hazard_label}"}
+                                                {f"[{f.hazard_label}]"}
                                             </span>
                                         )}
                                         {len(f.critical_loads) > 0 and (
@@ -427,7 +427,7 @@ def:pub OperatorApp -> JsxElement {
                                         </span>
                                         {f.updated_by_crew and (
                                             <span style={{"fontSize": "0.65rem", "color": "#f59e0b", "fontWeight": "600"}}>
-                                                {"• Mind-changed ↺"}
+                                                {"• Revised"}
                                             </span>
                                         )}
                                     </div>
@@ -657,7 +657,7 @@ def:pub OperatorApp -> JsxElement {
                             "cursor": "pointer"
                         }}
                     >
-                        {"⏸ Pause" if running else "▶ Run"}
+                        {"Pause" if running else "Run"}
                     </button>
 
                     <button
@@ -674,7 +674,7 @@ def:pub OperatorApp -> JsxElement {
                             "cursor": "pointer"
                         }}
                     >
-                        {"⏭ Step"}
+                        {"Step"}
                     </button>
 
                     <button
@@ -692,7 +692,7 @@ def:pub OperatorApp -> JsxElement {
                             "cursor": "pointer"
                         }}
                     >
-                        {"▲ Expand"}
+                        {"Controls"}
                     </button>
                 </div>
             )}
@@ -742,7 +742,7 @@ def:pub OperatorApp -> JsxElement {
                                 "cursor": "pointer"
                             }}
                         >
-                            {"— Minimize"}
+                            {"Minimize"}
                         </button>
                     </div>
 
@@ -775,7 +775,7 @@ def:pub OperatorApp -> JsxElement {
                                     "fontWeight": "600"
                                 }}
                             >
-                                {"● Active" if running else "⏸ Paused"}
+                                {"Active" if running else "Paused"}
                             </span>
                         </div>
 
@@ -836,7 +836,7 @@ def:pub OperatorApp -> JsxElement {
                                     "cursor": "pointer"
                                 }}
                             >
-                                {("⏸ Pause" if running else "▶ Start Storm")}
+                                {("Pause" if running else "Start Storm")}
                             </button>
 
                             <button
@@ -854,7 +854,7 @@ def:pub OperatorApp -> JsxElement {
                                     "cursor": "pointer"
                                 }}
                             >
-                                {"⏭ Step Tick"}
+                                {"Step Tick"}
                             </button>
                         </div>
 
@@ -873,7 +873,7 @@ def:pub OperatorApp -> JsxElement {
                                 "cursor": "pointer"
                             }}
                         >
-                            {"⚡ Start Blackout (transmission line trip)"}
+                            {"Trigger Blackout (TL1 trip)"}
                         </button>
 
                         {#* Reset Button *#}
@@ -892,7 +892,7 @@ def:pub OperatorApp -> JsxElement {
                                 "cursor": "pointer"
                             }}
                         >
-                            {"↺ Reset Scenario"}
+                            {"Reset Grid"}
                         </button>
                     </div>
                 </div>

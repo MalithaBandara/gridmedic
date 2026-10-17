@@ -18,7 +18,7 @@ impl CustomerApp.sendComplaint -> None {
     _ = root spawn submit_complaint(text=report_text, consumer_no=consumer_input.strip());
     complaint_submitted = True;
     sms_messages = sms_messages + [
-        f"CEB 1987: We received your outage report for {consumer_input}. Ticket logged and queued for crew assessment."
+        f"GridMedic: Outage report received for consumer {consumer_input}. Ticket logged and queued for assessment."
     ];
     report_text = "";
 }

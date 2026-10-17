@@ -37,6 +37,9 @@ def _run_storm {
     if len(complaint_log().items) > 100 {
         return;
     }
+    if len(complaint_log().items) > 100 {
+        return;
+    }
     _preload();
     storm_start(5);
     for _ in range(42) {

@@ -117,12 +117,15 @@ def home_id(n: int, i: int) -> str {
 
 """Build the demo grid under root, or return SS1 if it is already there."""
 def build_grid -> Substation {
-    existing = [root -->[?:Substation]];
+    existing = [s for s in [root -->[?:Substation]] if children(s)];
     if existing {
         _add_microgrids(existing[0]);    # graphs persisted before microgrids existed
         _add_transmission(existing[0]);
         _ensure_state();
         return existing[0];
+    }
+    for orphan in [root -->[?:Substation]] {
+        del orphan;
     }
     ss = Substation(id="SS1", name="Moratuwa Grid Substation", x=200, y=300);
     root ++> ss;
@@ -301,7 +304,13 @@ def _transformer(sec: Section, n: int, x: int, y: int, critical: list[str], stre
 
 """TL1 under root, feeding SS1, unless it is already there."""
 def _add_transmission(ss: Substation) {
-    if [root -->[?:TransmissionLine]] {
+    tls = [root -->[?:TransmissionLine]];
+    if tls {
+        tl = tls[0];
+        has_edge = any([x.id == ss.id for x in [tl -->] if isinstance(x, Substation)]);
+        if not has_edge {
+            tl +>:Feeds(capacity=2 * FEEDER_CAPACITY):+> ss;
+        }
         return;
     }
     (tid, name, kv, x, y) = TRANSMISSION;

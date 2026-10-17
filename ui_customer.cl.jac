@@ -11,8 +11,8 @@ def:pub CustomerApp -> JsxElement {
         status_checked: bool = False,
         complaint_submitted: bool = False,
         sms_messages: list[str] = [
-            "CEB Alert (1987): Severe storm activity reported in Moratuwa area. Operations teams are monitoring.",
-            "CEB Alert: If experiencing sparking wires or fallen poles, please keep clear and report immediately."
+            "GridMedic Outage Advisory: High wind and storm activity detected in Moratuwa sector. Automated restoration active.",
+            "GridMedic Advisory: If encountering fallen conductors or damaged infrastructure, maintain a safe distance and report immediately."
         ];
 
     can with entry {
@@ -72,7 +72,7 @@ def:pub CustomerApp -> JsxElement {
                             "fontWeight": "600"
                         }}
                     >
-                        {"← Back to Control Room"}
+                        {"< Back to Control Room"}
                     </Link>
                 </div>
 
@@ -138,10 +138,16 @@ def:pub CustomerApp -> JsxElement {
                             }}
                         >
                             <div style={{"display": "flex", "alignItems": "center", "justifyContent": "space-between", "marginBottom": "0.4rem"}}>
-                                <div style={{"display": "flex", "alignItems": "center", "gap": "0.45rem"}}>
-                                    <span style={{"fontSize": "1rem"}}>
-                                        {"⚡" if status_info.has_power else "⚠️"}
-                                    </span>
+                                <div style={{"display": "flex", "alignItems": "center", "gap": "0.55rem"}}>
+                                    <span
+                                        style={{
+                                            "display": "inline-block",
+                                            "width": "8px",
+                                            "height": "8px",
+                                            "borderRadius": "50%",
+                                            "backgroundColor": "#10b981" if status_info.has_power else "#ef4444"
+                                        }}
+                                    />
                                     <strong style={{"fontSize": "0.9rem", "color": "#f8fafc"}}>
                                         {"Power Normal" if status_info.has_power else "Outage Active"}
                                     </strong>
@@ -224,13 +230,13 @@ def:pub CustomerApp -> JsxElement {
                         </button>
                         {complaint_submitted and (
                             <span style={{"color": "#10b981", "fontSize": "0.82rem"}}>
-                                {"✓ Report received."}
+                                {"Report received and logged."}
                             </span>
                         )}
                     </div>
                 </div>
 
-                {#* Simulated SMS Updates Panel *#}
+                {#* Automated Notifications Panel *#}
                 <div
                     style={{
                         "backgroundColor": "#0f172a",
@@ -240,10 +246,10 @@ def:pub CustomerApp -> JsxElement {
                     }}
                 >
                     <h2 style={{"margin": "0 0 0.35rem 0", "fontSize": "1.05rem", "fontWeight": "700", "color": "#f8fafc"}}>
-                        {"Simulated SMS Alerts (1987 / CEBCare)"}
+                        {"Automated Outage Notifications"}
                     </h2>
                     <p style={{"margin": "0 0 0.85rem 0", "color": "#64748b", "fontSize": "0.78rem"}}>
-                        {"Simulated consumer notifications for status updates."}
+                        {"Real-time consumer alerts and restoration notifications."}
                     </p>
                     <div style={{"display": "flex", "flexDirection": "column", "gap": "0.35rem"}}>
                         {[

@@ -415,6 +415,67 @@ impl grid_view -> GridView {
     snap = Snapshot();
     ss spawn snap;
     nodes: list[GridNodeView] = list(snap.nodes);
+    edges: list[GridEdgeView] = list(snap.edges);
+    if not nodes {
+        seen_ids: set[str] = set();
+        queue: list[GridNode] = [ss];
+        while queue {
+            curr = queue.pop(0);
+            if curr.id in seen_ids {
+                continue;
+            }
+            seen_ids.add(curr.id);
+            v = GridNodeView(id=curr.id, kind="node", x=curr.x, y=curr.y, label=curr.id, energised=curr.energised, has_power=curr.energised);
+            if isinstance(curr, Substation) {
+                v.kind = "substation";
+                v.label = curr.name or curr.id;
+            } elif isinstance(curr, Section) {
+                v.kind = "section";
+                v.work_zone = curr.work_zone;
+            } elif isinstance(curr, Switch) {
+                v.kind = "switch";
+                v.closed = curr.closed;
+                v.tie = curr.kind == "tie";
+                v.label = f"{curr.id} ({curr.kind})" if curr.kind != "switch" else curr.id;
+            } elif isinstance(curr, Transformer) {
+                v.kind = "transformer";
+                v.homes = curr.homes;
+                ups = parents(curr);
+                v.parent_id = ups[0].id if ups else "";
+                for k in children(curr) {
+                    if isinstance(k, Microgrid) and k.supplying {
+                        v.powered_by = k.id;
+                    }
+                }
+            } elif isinstance(curr, Microgrid) {
+                v.kind = "microgrid";
+                v.label = curr.name or curr.id;
+                v.parent_id = parents(curr)[0].id if parents(curr) else "";
+                v.battery_min = curr.battery_min;
+                v.battery_max = curr.battery_max;
+                v.supplying = curr.supplying;
+                v.islanded = curr.islanded;
+                v.isolated = curr.isolated;
+                v.has_power = curr.supplying;
+                v.status = "restored" if curr.supplying else "normal";
+            } elif isinstance(curr, Home) {
+                v.kind = "home";
+                v.label = curr.consumer_no;
+                v.parent_id = curr.transformer_id;
+                v.has_power = curr.has_power;
+                v.reported = curr.reported;
+            }
+            nodes.append(v);
+            kids = children(curr);
+            for child in kids {
+                is_tie: bool = isinstance(child, Switch) and child.kind == "tie";
+                closed: bool = child.closed if isinstance(child, Switch) else True;
+                ekind: str = "backup" if isinstance(child, Microgrid) else ("tie" if is_tie else "feeds");
+                edges.append(GridEdgeView(from_id=curr.id, to_id=child.id, kind=ekind, closed=closed));
+            }
+            queue.extend(kids);
+        }
+    }
     # Fault state colours the faulted device: suspected / faulted / restored
     state_of: dict[str, str] = {};
     for fn in [root -->[?:FaultNode]] {
@@ -432,12 +493,9 @@ impl grid_view -> GridView {
             v.status = state_of[v.id];
         }
     }
-    edges: list[GridEdgeView] = list(snap.edges);
     for tl in [root -->[?:TransmissionLine]] {
         nodes.append(GridNodeView(id=tl.id, kind="transmission", x=tl.x, y=tl.y, label=f"{tl.id} · {tl.kv} kV", energised=tl.energised, has_power=tl.energised, status=state_of.get(tl.id, "normal")));
-        for ss in [x for x in [tl -->] if isinstance(x, Substation)] {
-            edges.append(GridEdgeView(from_id=tl.id, to_id=ss.id, kind="transmission"));
-        }
+        edges.append(GridEdgeView(from_id=tl.id, to_id=ss.id, kind="transmission"));
     }
     for d in [root -->[?:Depot]] {
         nodes.append(GridNodeView(id=d.id, kind="depot", x=d.x, y=d.y, label=d.name or d.id));
