@@ -266,8 +266,19 @@ def _critical(txs: list[Transformer]) -> list[str] {
     return out;
 }
 
-def _landmark_names(idx: GridIndex, secs: list[str]) -> str {
-    names = [lm.name for lm in idx.landmarks if lm.section_id in secs and lm.name != ""];
+# Only the landmarks the hazard complaints name, not every landmark on `secs`
+# (a section can also hold a hospital or school landmark).
+def _landmark_names(idx: GridIndex, complaints: list[Complaint], secs: list[str]) -> str {
+    names: list[str] = [];
+    for c in complaints {
+        if c.is_duplicate or c.hazard == Hazard.NONE {
+            continue;
+        }
+        lm = _matched_landmark(idx, c.landmark);
+        if lm and lm.section_id in secs and lm.name != "" and lm.name not in names {
+            names.append(lm.name);
+        }
+    }
     return ", ".join(names) if len(names) > 0 else "a landmark";
 }
 
@@ -289,7 +300,7 @@ def _line_down(
         evidence.append(f"{len(hot)} transformers downstream of {sid} are out together: {hot_ids}");
     }
     if hazards > 0 {
-        where = _landmark_names(idx, secs);
+        where = _landmark_names(idx, complaints, secs);
         evidence.append(f"{hazards} hazard reports mention {where}");
     }
     parent = idx.parent_section.get(sid, "");
@@ -554,14 +565,19 @@ impl section_for_landmark(idx: GridIndex, text: str) -> str {
 # this index already holds: that function walks the whole grid on every call
 # (~7 s under jac test), too slow to call per complaint inside a tick.
 def _match_landmark(idx: GridIndex, text: str) -> str {
+    lm = _matched_landmark(idx, text);
+    return lm.section_id if lm else "";
+}
+
+def _matched_landmark(idx: GridIndex, text: str) -> Landmark | None {
     t = " " + " ".join(re.findall(r"[a-z0-9]+", text.lower())) + " ";
     if t.strip() == "" {
-        return "";
+        return None;
     }
     for lm in idx.landmarks {
         name = " ".join(re.findall(r"[a-z0-9]+", lm.name.lower()));
         if name and (" " + name + " ") in t {
-            return lm.section_id;
+            return lm;
         }
         # "pole 23" also matches "pole no 23", "pole #23" and "kanuwa 23"
         digits = re.findall(r"\d+", name);
@@ -569,9 +585,9 @@ def _match_landmark(idx: GridIndex, text: str) -> str {
             num: str = str(digits[0]);
             pattern: str = r"(pole|kanuwa|කණුව)\D{0,6}" + num + r"(?!\d)";
             if re.search(pattern, text.lower()) {
-                return lm.section_id;
+                return lm;
             }
         }
     }
-    return "";
+    return None;
 }
