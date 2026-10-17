@@ -6,15 +6,15 @@
 
 ---
 
-## 0. Status board (updated 17 Oct, 10:45)
+## 0. Status board (updated 17 Oct, 11:05)
 
-**Where things stand:** `main` (4e5d52f) runs a full storm in the browser. Start Storm → auto-ticking clock → complaints parsed and traced upstream → 4 ranked faults (F1-B line down + hospital, T6 water pump, T9, T8) on a live map, with events, evidence and customer status. It still runs on **`scenario_placeholder.jac`** (B's stand-in grid and storm) until A1/A2 merge.
+**Where things stand:** `main` (0b3c6ee) runs a full storm in the browser on **A1's real 600-home grid**. Start Storm → auto-ticking clock → complaints parsed and traced upstream → 4 ranked faults on a live map: F1-B line down (205 homes, HOSPITAL + SCHOOL) > T6 (WATER_PUMP) > T9 suspected fuse (confidence 0.4) > T8. Events, evidence and customer status work too. The **complaints** still come from `scenario_placeholder.jac` (B's stand-in storm) until A2 lands.
 
 | WP | Owner | Status | Notes / what's left |
 |---|---|---|---|
 | A0 Scaffold, config | A | ✅ mostly | **Live smoke test not run**: `GEMINI_API_KEY` is not set on the dev machine. Every member still has to star jaseci-labs/jac. |
-| A1 Grid builder | A | 🟡 branch | `origin/wp/A1` (fbce476), not merged. It also edits CLAUDE.md §5/§6.1 (adds SCHOOL on T1/T5 and POLICE on T10, and per-transformer streets). After merging, switch `sim.jac`'s `build_grid`/`reset_grid` import from `scenario_placeholder` to `grid_build`. |
-| A2 Storm + complaints | A | 🔴 not pushed | Signatures: `generate_complaints(seed=17)`, `apply_storm_truth(f5=False)`, `f5_followup_complaints(start_min)`. After merging, switch the second `sim.jac` import line, then delete `scenario_placeholder.jac`. |
+| A1 Grid builder | A | ✅ merged | `grid_build.jac`, 12 tests. Adds SCHOOL (T1, T5), POLICE (T10), per-transformer streets and 5 facility landmarks (CLAUDE.md §6.1). `sim.jac` now uses it. |
+| A2 Storm + complaints | A | 🔴 not pushed | Signatures: `generate_complaints(seed=17)`, `apply_storm_truth(f5=False)`, `f5_followup_complaints(start_min)`. After merging, switch the **one** remaining `import from scenario_placeholder` line in `sim.jac` to `grid_storm`, then delete `scenario_placeholder.jac`. |
 | A3 Acceptance tests | A | 🔴 not started | CLAUDE.md §11 tests 1–15 in `tests/*_tests.jac`. Needs A1 + A2. |
 | A4 Jac Hammer deploy | A | 🔴 13:00–14:00 | |
 | A5 README | A | 🟡 draft on main | |
@@ -22,7 +22,7 @@
 | B1 Parser | B | ✅ | 7 MockLLM tests. Real Gemini is unverified (no key). |
 | B2 Localiser + grouping | B | ✅ | One Localiser spawn per tick: 109 complaints in 0.4 s. |
 | B3 Prioritiser | B | ✅ | Test 7 order passes. |
-| B4 Sim + real API | B | ✅ on placeholder | ~1 s per tick. `sim.LOCK` serialises the writer endpoints. Still to do: re-verify F1–F4 on A1/A2 data. |
+| B4 Sim + real API | B | ✅ | ~1 s per tick at 1×. `sim.LOCK` serialises the writer endpoints. All module tests pass on the A1 grid. Still to do: re-verify F1–F4 (hazards included) on A2's complaints. |
 | B5 Crew-report feedback | B | 🔴 next | The `crew_report` endpoint currently only logs the text. Needs `agents_feedback.jac` + `grid.impl/feedback.impl.jac` (F4 mind-change, RESTORED → physical truth back to ok). |
 | B6 Explainer + noise | B | 🔴 | `explain_fault` by llm() + an `explain` endpoint. Duplicates are already logged. |
 | B7 Verifier | B | 🔴 T3 | Needs B5 and C3. |
@@ -35,7 +35,7 @@
 | C6 Customer page | C | 🟡 | Report + status + SMS panel are wired to the real `submit_complaint`/`get_status`. Check the 3 s poll and status-change SMS. |
 | C7 Restorer + SafetyCheck | C | 🔴 T3 | Needs C3 + C4. `sim.apply()` already executes the switching steps of a safe action. |
 
-**Critical path to the 13:00 checkpoint:** merge A1 → A2 lands → switch the two `sim.jac` imports → C3 Energiser. **To 15:00:** B5 (F4 twist) + C4 (crews move) + C5 highlight.
+**Critical path to the 13:00 checkpoint:** A2 lands → switch the `sim.jac` import → C3 Energiser (so outages show). **To 15:00:** B5 (F4 twist) + C4 (crews move) + C5 highlight. **Needed for hazards:** set `GEMINI_API_KEY` and run `scripts/smoke_llm.jac`.
 
 ---
 
@@ -460,7 +460,7 @@ Each WP lists: **Owns** (the only files it may edit) · **Needs** (merged WPs) �
   - ❌ The smoke LLM test passes (not run: no `GEMINI_API_KEY`).
   - ✅ The language bar shows Jac.
 - **13:00**
-  - 🟡 Start Storm → complaint dots → F1–F4 on the map → ranked list. Works on the placeholder scenario. Still needed: A1/A2 data and C3, so outages show.
+  - 🟡 Start Storm → complaint dots → F1–F4 on the map → ranked list. Works on the A1 grid with the placeholder storm. Still needed: A2 complaints and C3, so outages show.
   - ❌ A3 tier-1 tests pass.
 - **15:00**
   - The F4 mind-change works live.

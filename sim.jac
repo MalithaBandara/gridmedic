@@ -54,8 +54,8 @@ import from grid {
     children,
     parents
 }
-# Placeholder until WP-A1/A2 land: switch to grid_build / grid_storm then.
-import from scenario_placeholder { build_grid, reset_grid }
+import from grid_build { build_grid, reset_grid }
+# Placeholder storm until WP-A2 lands: switch this line to grid_storm then.
 import from scenario_placeholder { generate_complaints, apply_storm_truth }
 import from agents_parse { parse_batch, parse_one, flag_duplicates }
 import from agents_group { localise_all, group_faults }
