@@ -28,6 +28,7 @@ An open-source, graph-native decision support engine built in pure [Jac](https:/
 - [What GridMedic Does](#what-gridmedic-does)
 - [System Architecture](#system-architecture)
 - [Multi-Agent Workflow](#multi-agent-workflow)
+  - [Dynamic Fault Prioritization Algorithm](#dynamic-fault-prioritization-algorithm)
 - [Why Pure Jac?](#why-pure-jac)
 - [User Interfaces](#user-interfaces)
 - [Demo Scenario & Ground Truth](#demo-scenario--ground-truth)
@@ -177,6 +178,41 @@ GridMedic organizes decision-making into specialized Jac walkers and LLM-powered
 | **Restorer & SafetyCheck** | `grid.impl/restore.impl.jac` & `grid.impl/safety.impl.jac` | Plans tie-switch re-routing (TS1) and microgrid islanding (hospital diesel, residential solar). `SafetyCheck` steps through each switching sequence; switch nodes actively refuse closure if the step backfeeds an active crew work zone. |
 | **Post-Repair Verifier** | `grid.impl/verify.impl.jac` | Monitors consumer complaints arriving within a 5-minute window following a repair. Re-runs localized clustering to uncover secondary faults masked by the initial trip. |
 
+### Dynamic Fault Prioritization Algorithm
+
+During severe storm emergencies, dispatchers cannot treat every outage as equal. GridMedic executes a deterministic multi-factor triage algorithm in [`agents_priority.jac`](file:///c:/Users/SINGER/Documents/GridWalker/agents_priority.jac) that calculates dynamic priority scores across all clustered faults:
+
+$$\text{Priority Score} = 1000 \cdot \mathbb{I}_{\text{hazard}} + 500 \cdot \mathbb{I}_{\text{critical}} + N_{\text{homes}} + 2 \cdot T_{\text{wait}}$$
+
+#### 1. Mathematical Weight Breakdown
+
+| Term | Weight Factor | Value / Condition | Operational Rationale |
+|---|---|---|---|
+| **Life Safety Hazard** | `HAZARD_WEIGHT = 1000` | $\mathbb{I}_{\text{hazard}} = 1$ if `hazard != NONE` (`WIRE_DOWN`, `SPARKS`, `FIRE`, `TRANSFORMER_NOISE`) | **Zero-harm imperative:** Live conductors downed across public roadways and sparking transformers pose imminent electrocution and fire hazards. Public life-safety always supersedes customer count. |
+| **Critical Infrastructure** | `CRITICAL_WEIGHT = 500` | $\mathbb{I}_{\text{critical}} = 1$ if $\text{len}(\text{critical\_loads}) > 0$ | Protects vital community life-support, emergency coordination, and designated public relief shelters (hospitals, water pumps, schools, police). |
+| **Affected Population** | $1 \times N_{\text{homes}}$ | $N_{\text{homes}} = \text{homes\_affected}$ | Maximises restoration efficiency across customer bases to minimize system interruption duration (SAIDI). |
+| **Starvation Prevention** | `AGE_WEIGHT = 2` | $T_{\text{wait}} = \max(0, \text{clock\_min} - \text{first\_report\_min})$ | Adds 2 points per elapsed minute of waiting since first complaint. Prevents low-voltage street faults from being permanently starved by subsequent incidents. |
+
+#### 2. Critical Infrastructure & School Shelter Rationale
+
+GridMedic recognizes five essential public facilities tagged on the distribution network:
+
+* 🏥 **Lakeview General Hospital** (`T3` / `F1-B`): Intensive care, emergency surgical units, and temperature-controlled medical storage.
+* 💧 **Reservoir Road Pumping Station** (`T6` / `F2-A`): Municipal potable water distribution and emergency fire hydrant water pressure.
+* 🏫 **Bridge Road Maha Vidyalaya** (`T5` / `F1-C`) & **Railway Avenue Primary School** (`T1` / `F1-A`):
+  * **Domain Rationale for Schools:** In Sri Lanka and wider South Asian disaster management protocols, major central school campuses (*Maha Vidyalayas*) are officially designated as primary community evacuation centres, relief hubs, and storm shelters during monsoon flooding and severe weather. Restoring electricity to schools is critical for powering emergency floodlights, operating clean water pumps and sanitation systems, and providing mobile device charging for displaced families.
+* 👮 **Ward Place Police Station** (`T10` / `F2-B`): Civil protection, disaster coordination command, and emergency dispatch communications.
+
+#### 3. Deterministic Lifecycle Sorting & Tie-Breaking
+
+Faults are sorted in real time using a 4-tuple composite key:
+
+$$\text{Sort Key} = \Big(\mathbb{I}_{\text{finished}},\; -\text{Priority},\; T_{\text{first\_report}},\; \text{Fault ID}\Big)$$
+
+1. **Terminal State Sinking:** Restored or resolved faults (`RESTORED`, `CLOSED`) have $\mathbb{I}_{\text{finished}} = 1$, instantly sinking them below all active incidents ($\mathbb{I}_{\text{finished}} = 0$) regardless of accumulated points.
+2. **Priority Precedence:** Active faults sort by descending priority score ($-\text{Priority}$).
+3. **FIFO Tie-Breaking:** In the rare event of identical priority scores, the older fault ($T_{\text{first\_report}}$) is served first, followed by deterministic lexical `Fault ID`.
+
 ---
 
 ## Why Pure Jac?
@@ -277,8 +313,8 @@ The demo simulates a realistic severe weather incident on the fictional **Moratu
   * 🏥 **Lakeview General Hospital** (T3 / F1-B)
   * 💧 **Reservoir Road Pumping Station** (T6 / F2-A)
   * 👮 **Ward Place Police Station** (T10 / F2-B)
-  * 🏫 **Railway Avenue Primary School** (T1 / F1-A)
-  * 🏫 **Bridge Road Maha Vidyalaya** (T5 / F1-C)
+  * 🏫 **Railway Avenue Primary School** (T1 / F1-A; designated flood shelter)
+  * 🏫 **Bridge Road Maha Vidyalaya** (T5 / F1-C; primary community storm relief center)
 * **2 Microgrids:**
   * **MG-HOSP:** Dedicated diesel/battery backup for Lakeview Hospital (240 min capacity).
   * **MG-RES:** Community solar/battery bank on T5 capable of islanding 80 homes (120 min capacity).
