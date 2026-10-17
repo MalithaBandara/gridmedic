@@ -51,10 +51,13 @@ def section_for_landmark(idx: GridIndex, text: str) -> str;
 
 def build_index -> GridIndex;
 
-"""Spawn a Localiser at the complaint's Home (or its landmark's Section). False if unlocatable or a duplicate."""
+"""Where a complaint's climb starts: its Home, else its landmark's Section. None if unlocatable or a duplicate."""
+def start_node(c: Complaint, idx: GridIndex) -> GridNode | None;
+
+"""Localise one complaint (e.g. from the customer page). False if unlocatable or a duplicate."""
 def localise(c: Complaint, idx: GridIndex) -> bool;
 
-"""Localise a batch of parsed complaints. Returns how many were located."""
+"""Localise a batch of parsed complaints with ONE Localiser spawn. Returns how many were located."""
 def localise_all(complaints: list[Complaint]) -> int;
 
 """§8.2 steps 1-5 over the current tallies; upserts FaultNodes and returns every current Fault.

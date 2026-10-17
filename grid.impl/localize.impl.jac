@@ -4,8 +4,16 @@ The walker only climbs. Counting happens on the nodes: each Home marks itself
 reported and each Transformer/Section tallies the walker that reaches it.
 On every node the walker's ability runs first, so climb still sees the
 Home's old `reported` flag: a home that was already counted stops the climb
-there, which keeps the tallies at DISTINCT reporting homes.
+there, which keeps the tallies at DISTINCT reporting homes. The same rule
+covers a home that appears twice in one batch.
+
+One walker climbs from every start, so it reaches a shared Transformer once
+per reporting home: that is the tally. `path` only records where it went.
 """
+
+impl Localiser.begin {
+    visit self.starts;
+}
 
 impl Localiser.climb {
     self.path.append(here.id);
@@ -14,8 +22,7 @@ impl Localiser.climb {
     tie = isinstance(here, Switch)
         and ((here as Switch).normally_open or (here as Switch).kind == "tie");
     if not counted and not tie {
-        ups = [p for p in parents(here) if p.id not in self.path];
-        visit ups;
+        visit parents(here);
     }
 }
 

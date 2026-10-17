@@ -77,39 +77,49 @@ impl build_index -> GridIndex {
     return idx;
 }
 
-impl localise(c: Complaint, idx: GridIndex) -> bool {
+impl start_node(c: Complaint, idx: GridIndex) -> GridNode | None {
     if c.is_duplicate {
-        return False;
+        return None;
     }
-    h: Home | None = None;
     if c.home_id != "" and c.home_id in idx.homes {
-        h = idx.homes[c.home_id];
-    } elif c.consumer_no != "" and c.consumer_no in idx.homes_by_consumer {
-        h = idx.homes_by_consumer[c.consumer_no];
+        return idx.homes[c.home_id];
     }
-    if h is not None {
-        h spawn Localiser(complaint_id=c.id);
-        return True;
+    if c.consumer_no != "" and c.consumer_no in idx.homes_by_consumer {
+        return idx.homes_by_consumer[c.consumer_no];
     }
     sid = section_for_landmark(idx, c.landmark);
     for s in idx.sections {
         if s.id == sid {
-            s spawn Localiser(complaint_id=c.id);
-            return True;
+            return s;
         }
     }
-    return False;
+    return None;
 }
 
+impl localise(c: Complaint, idx: GridIndex) -> bool {
+    n = start_node(c, idx);
+    if n is None {
+        return False;
+    }
+    root spawn Localiser(complaint_id=c.id, starts=[n]);
+    return True;
+}
+
+# Each spawn costs ~0.2 s on the full grid whatever it does, so one walker
+# climbs from every start in the batch.
 impl localise_all(complaints: list[Complaint]) -> int {
     idx = build_index();
-    located = 0;
+    starts: list[GridNode] = [];
     for c in complaints {
-        if localise(c, idx) {
-            located += 1;
+        n = start_node(c, idx);
+        if n is not None {
+            starts.append(n);
         }
     }
-    return located;
+    if len(starts) > 0 {
+        root spawn Localiser(starts=starts);
+    }
+    return len(starts);
 }
 
 impl home_count(idx: GridIndex, t: Transformer) -> int {

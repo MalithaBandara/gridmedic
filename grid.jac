@@ -138,11 +138,15 @@ node ActionStore {
 }
 
 # ------------------------------------------------------------------- walkers
-# Spawned at a complaint's Home; walks upstream. Nodes tally themselves.
+# Spawned at root with every new complaint's Home (or landmark Section) in
+# `starts`: one spawn per batch, because each spawn costs ~0.2 s on the full
+# grid. Walks upstream; nodes tally themselves.
 walker Localiser {
     has complaint_id: str = "",
-        path: list[str] = [];
+        path: list[str] = [],
+        starts: list[GridNode] = [];
 
+    can begin with Root entry;
     can climb with GridNode entry;
 }
 
