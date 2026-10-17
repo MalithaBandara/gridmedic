@@ -1,7 +1,8 @@
 """Demo grid builder (WP-A1): the fictional grid from CLAUDE.md §6.1 under root.
 
 1 substation, 2 feeders, 5 sections, 3 switches + tie TS1, 10 transformers,
-600 homes, 5 priority facilities, Pole 23, 2 depots and 3 crews.
+600 homes, 5 priority facilities, Pole 23, 2 microgrids (MG-HOSP on T3, MG-RES
+on T5), 2 depots and 3 crews.
 
 build_grid() is idempotent: if SS1 exists it returns it. reset_grid() puts the
 grid back to its normal state before a storm and keeps ParseCache.
@@ -21,6 +22,7 @@ import from grid {
     Home,
     Depot,
     Landmark,
+    Microgrid,
     CrewNode,
     FaultNode,
     SimState,
@@ -73,6 +75,14 @@ glob LANDMARKS: list[tuple[str, str, str, int, int]] = [
     ("LM-SCHOOL-RAILWAY", "Railway Avenue Primary School", "F1-A", 300, 60)
 ];
 
+# id, name, transformer served, kind, x, y, capacity (homes), critical_only,
+# landmark powered, battery minutes. The hospital set carries only the hospital
+# (critical_only); the residential set carries all of its transformer's homes.
+glob MICROGRIDS: list[tuple[str, str, str, str, int, int, int, bool, str, int]] = [
+    ("MG-HOSP", "Lakeview Hospital backup", "T3", "DIESEL_BATTERY", 455, 100, 20, True, "LM-HOSPITAL", 240),
+    ("MG-RES", "Bridge Road solar + battery", "T5", "SOLAR_BATTERY", 815, 100, 80, False, "", 120)
+];
+
 # id, name, x, y
 glob DEPOTS: list[tuple[str, str, int, int]] = [
     ("CSC-North", "CSC-North", 80, 150),
@@ -105,6 +115,7 @@ def home_id(n: int, i: int) -> str {
 def build_grid -> Substation {
     existing = [root -->[?:Substation]];
     if existing {
+        _add_microgrids(existing[0]);    # graphs persisted before microgrids existed
         _ensure_state();
         return existing[0];
     }
@@ -130,6 +141,7 @@ def build_grid -> Substation {
     for (n, sid, x, y, critical, streets) in TRANSFORMERS {
         _transformer(secs[sid], n, x, y, critical, streets);
     }
+    _add_microgrids(ss);
     for (lid, name, sid, x, y) in LANDMARKS {
         lm = Landmark(id=lid, name=name, section_id=sid, x=x, y=y);
         lm +>:Located:+> secs[sid];
@@ -175,6 +187,11 @@ def reset_grid {
         } elif isinstance(n, Home) {
             n.has_power = True;
             n.reported = False;
+        } elif isinstance(n, Microgrid) {
+            n.battery_min = n.battery_max;
+            n.isolated = False;
+            n.islanded = False;
+            n.supplying = False;
         }
     }
 
@@ -268,6 +285,23 @@ def _transformer(sec: Section, n: int, x: int, y: int, critical: list[str], stre
                 transformer_id=tid
             );
             i += 1;
+        }
+    }
+}
+
+"""Hang each microgrid off the transformer it serves, unless it is already there."""
+def _add_microgrids(ss: Substation) {
+    nodes = grid_nodes(ss);
+    have: set[str] = set([n.id for n in nodes if isinstance(n, Microgrid)]);
+    for (mid, name, tid, kind, x, y, cap, crit, lmid, mins) in MICROGRIDS {
+        if mid in have {
+            continue;
+        }
+        for t in [n for n in nodes if isinstance(n, Transformer) and n.id == tid] {
+            t +>:Located:+> Microgrid(
+                id=mid, name=name, kind=kind, x=x, y=y, capacity_homes=cap,
+                critical_only=crit, landmark_id=lmid, battery_max=mins, battery_min=mins
+            );
         }
     }
 }

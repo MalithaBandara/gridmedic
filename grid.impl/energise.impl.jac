@@ -1,89 +1,117 @@
-"""Energiser (WP-C3, CLAUDE.md §8.3, PLAN.md §2, §5 WP-C3).
+"""Energiser (WP-C3): who has power right now.
 
-Bidirectional flood fill from SS1 through closed switches and healthy sections,
-following Feeds edges in both directions so the tie TS1 works either way.
-Sets Section.energised, Switch.energised, Transformer.energised, and
-Home.has_power / Home.energised, respecting line_ok, closed switches, fuse_ok,
-and service_ok[street].
+Spawned at SS1. Floods outward over Feeds in both directions (so the tie TS1
+works either way) through closed switches, healthy sections and transformers
+with a good fuse, then sets energised / has_power from the physical truth
+(line_ok, fuse_ok, service_ok, locked_out). It may read that truth; the
+discovery agents may not.
+
+Microgrids add a second kind of source: an islanded microgrid with battery
+left supplies the transformer it hangs off when the grid does not. A
+critical_only set (the hospital) lights its landmark but not the homes. One
+that runs without its isolator open also back-feeds the section above it.
 """
+
+def _walk(start: GridNode) -> list[GridNode] {
+    seen: set[str] = set();
+    out: list[GridNode] = [];
+    queue: list[GridNode] = [start];
+    while queue {
+        n = queue.pop(0);
+        if n.id in seen {
+            continue;
+        }
+        seen.add(n.id);
+        out.append(n);
+        queue.extend(children(n));
+    }
+    return out;
+}
+
+def _can_enter(m: GridNode) -> bool {
+    if isinstance(m, Switch) {
+        return m.closed and not m.locked_out;
+    }
+    if isinstance(m, Section) {
+        return m.line_ok;
+    }
+    if isinstance(m, Transformer) {
+        return m.fuse_ok;
+    }
+    # Homes are lit through their transformer; microgrids and landmarks are not in the flood.
+    return isinstance(m, Substation);
+}
 
 impl Energiser.spread {
     if isinstance(here, Substation) {
-        self.live = [];
-        seen: set[str] = set();
-        q: list[GridNode] = [here];
-        while q {
-            curr = q.pop(0);
-            if curr.id in seen {
-                continue;
+        nodes = _walk(here);
+        live: set[str] = set([here.id]);
+        queue: list[GridNode] = [here];
+        while queue {
+            n = queue.pop(0);
+            for m in children(n) + parents(n) {
+                if m.id not in live and _can_enter(m) {
+                    live.add(m.id);
+                    queue.append(m);
+                }
             }
-            seen.add(curr.id);
-            curr.energised = False;
-            if isinstance(curr, Home) {
-                (curr as Home).has_power = False;
-            }
-            q.extend(children(curr));
         }
-    }
+        for n in nodes {
+            if not isinstance(n, Home) and not isinstance(n, Microgrid) {
+                n.energised = n.id in live;
+            }
+        }
+        self.live = list(live);
 
-    if here.id in self.live {
-        skip;
-    }
+        # Microgrids: supply a transformer the grid does not reach.
+        service: dict[str, dict[str, bool]] = {};
+        for n in nodes {
+            if isinstance(n, Transformer) {
+                service[n.id] = n.service_ok;
+            }
+        }
+        fed: set[str] = set();
+        lit: set[str] = set();
+        for n in nodes {
+            if isinstance(n, Microgrid) {
+                n.supplying = False;
+                if n.islanded and n.battery_min > 0 {
+                    for t in parents(n) {
+                        if isinstance(t, Transformer) and t.id not in live {
+                            if n.critical_only {
+                                n.supplying = True;
+                                lit.add(n.landmark_id);
+                            } elif t.homes <= n.capacity_homes {
+                                n.supplying = True;
+                                fed.add(t.id);
+                                t.energised = True;
+                            }
+                            if n.supplying and not n.isolated {
+                                for s in parents(t) {
+                                    s.energised = True;    # back-fed through the HV side
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
-    if isinstance(here, Substation) {
-        here.energised = True;
-        self.live.append(here.id);
-        visit [n for n in children(here) if n.id not in self.live];
-    } elif isinstance(here, Section) {
-        sec = here as Section;
-        if not sec.line_ok {
-            sec.energised = False;
-            skip;
-        }
-        sec.energised = True;
-        self.live.append(sec.id);
-        seen_ids: set[str] = set(self.live);
-        nbrs: list[GridNode] = [];
-        for n in children(sec) + parents(sec) {
-            if n.id not in seen_ids {
-                seen_ids.add(n.id);
-                nbrs.append(n);
+        for n in nodes {
+            if isinstance(n, Home) {
+                street_ok: bool = service.get(n.transformer_id, {}).get(n.street, True);
+                n.has_power = (n.transformer_id in live or n.transformer_id in fed) and street_ok;
+                n.energised = n.has_power;
             }
         }
-        visit nbrs;
-    } elif isinstance(here, Switch) {
-        sw = here as Switch;
-        if not sw.closed {
-            sw.energised = False;
-            skip;
-        }
-        sw.energised = True;
-        self.live.append(sw.id);
-        seen_ids: set[str] = set(self.live);
-        nbrs: list[GridNode] = [];
-        for n in children(sw) + parents(sw) {
-            if n.id not in seen_ids {
-                seen_ids.add(n.id);
-                nbrs.append(n);
-            }
-        }
-        visit nbrs;
-    } elif isinstance(here, Transformer) {
-        tx = here as Transformer;
-        if not tx.fuse_ok {
-            tx.energised = False;
-            skip;
-        }
-        tx.energised = True;
-        self.live.append(tx.id);
-        for h in children(tx) {
-            if isinstance(h, Home) {
-                hm = h as Home;
-                ok = tx.service_ok.get(hm.street, True);
-                hm.has_power = ok;
-                hm.energised = ok;
-                if ok {
-                    self.live.append(hm.id);
+        # Landmarks hang off their Section with a Located edge: lit when the
+        # section is, or when a microgrid carries them.
+        for n in nodes {
+            if isinstance(n, Section) {
+                for x in [n <--] {
+                    if isinstance(x, Landmark) {
+                        x.energised = n.id in live or x.id in lit;
+                    }
                 }
             }
         }

@@ -165,7 +165,13 @@ obj GridNodeView {
         homes: int = 0,
         parent_id: str = "",
         work_zone: bool = False,
-        tie: bool = False;
+        tie: bool = False,
+        powered_by: str = "",       # microgrid id supplying this transformer
+        battery_min: int = 0,       # microgrid views only
+        battery_max: int = 0,
+        supplying: bool = False,
+        islanded: bool = False,
+        isolated: bool = False;
 }
 
 # kind: feeds | tie

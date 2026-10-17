@@ -45,6 +45,7 @@ import from grid {
     Home,
     Depot,
     Landmark,
+    Microgrid,
     CrewNode,
     FaultNode,
     SimState,
@@ -95,6 +96,8 @@ def process_complaints(new_items: list[Complaint]) -> int;
 def submit(text: str, consumer_no: str) -> Complaint;
 def run_energiser;
 def run_dispatcher(minutes: float);
+def run_restorer;
+def drain_microgrids(minutes: float);
 
 # ------------------------------------------------------------------- reads
 def ranked_faults -> list[Fault];

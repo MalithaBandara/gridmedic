@@ -27,6 +27,9 @@ def status_colour(status: str, fallback: str) -> str {
 }
 
 def edge_colour(e: GridEdgeView, b: GridNodeView) -> str {
+    if e.kind == "backup" {
+        return RESTORED if b.supplying else DEAD;
+    }
     if e.kind == "tie" {
         return LIVE if e.closed else TIE;
     }
@@ -73,8 +76,8 @@ def:pub GridMap(grid: GridView | None) -> JsxElement {
                     x2={pos[e.to_id].x}
                     y2={pos[e.to_id].y}
                     stroke={edge_colour(e, pos[e.to_id])}
-                    strokeWidth={2 if e.kind == "tie" or pos[e.to_id].kind == "transformer" else 4}
-                    strokeDasharray={"5,4" if e.kind == "tie" and not e.closed else "0"}
+                    strokeWidth={2 if e.kind == "tie" or e.kind == "backup" or pos[e.to_id].kind == "transformer" else 4}
+                    strokeDasharray={"5,4" if (e.kind == "tie" and not e.closed) or e.kind == "backup" else "0"}
                 />
             }}
 
@@ -105,6 +108,13 @@ def:pub GridMap(grid: GridView | None) -> JsxElement {
                         <rect x={n.x - 10} y={n.y - 8} width="20" height="16" rx="2" fill="#0f172a" stroke={status_colour(n.status, LIVE if n.energised else DEAD)} strokeWidth="2"/>
                         <text x={n.x} y={n.y + 3} fill="#e2e8f0" fontSize="7" textAnchor="middle">{n.id}</text>
                     </g>
+                } elif n.kind == "microgrid" {
+                    <g key={n.id}>
+                        <rect x={n.x - 22} y={n.y - 11} width="44" height="22" rx="5" fill={"#064e3b" if n.supplying else "#0f172a"} stroke={RESTORED if n.supplying else ("#a3e635" if n.isolated else DEAD)} strokeWidth="2"/>
+                        <text x={n.x} y={n.y - 1} fill="#f8fafc" fontSize="7" fontWeight="bold" textAnchor="middle">{"⚡ " + n.id}</text>
+                        <rect x={n.x - 17} y={n.y + 3} width="34" height="3" rx="1" fill="#1e293b"/>
+                        <rect x={n.x - 17} y={n.y + 3} width={34 * n.battery_min / max(1, n.battery_max)} height="3" rx="1" fill={RESTORED if n.supplying else "#64748b"}/>
+                    </g>
                 } elif n.kind == "depot" {
                     <g key={n.id}>
                         <rect x={n.x - 30} y={n.y - 12} width="60" height="24" rx="4" fill="#1e293b" stroke="#64748b"/>
@@ -115,7 +125,7 @@ def:pub GridMap(grid: GridView | None) -> JsxElement {
                         <text key={n.id} x={n.x} y={n.y - 18} fill={FAULT} fontSize="11" fontWeight="bold" textAnchor="middle">{"⚠ " + n.label}</text>
                     }
                 } elif n.kind == "landmark" {
-                    <text key={n.id} x={n.x} y={n.y} fill={SUSPECT if n.status != "normal" else "#64748b"} fontSize="7" textAnchor="middle">{"★ " + n.label}</text>
+                    <text key={n.id} x={n.x} y={n.y} fill={(FAULT if not n.has_power else (RESTORED if n.status != "normal" else "#64748b"))} fontSize="7" textAnchor="middle">{"★ " + n.label}</text>
                 }
             }}
 

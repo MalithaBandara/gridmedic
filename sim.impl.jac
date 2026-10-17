@@ -116,6 +116,7 @@ impl storm_start(speed: int) -> Ack {
     st.running = True;
     st.speed = max(1, speed);
     run_energiser();
+    run_restorer();
     n = len(_scenario());
     log_event("storm", f"Storm started at {st.speed}x: {n} complaints will arrive over {int(STORM_LENGTH_MIN)} minutes");
     return Ack(ok=True, message=f"Storm started at {st.speed}x", clock_min=st.clock_min);
@@ -142,8 +143,10 @@ impl storm_tick(minutes: float) -> Ack {
         process_complaints(released);
     }
     # 7. C's walkers (no-ops until WP-C3 / WP-C4)
+    drain_microgrids(minutes);
     run_energiser();
     run_dispatcher(minutes);
+    run_restorer();
     left: int = len(scenario) - st.next_complaint_idx;
     return Ack(ok=True, message=f"{len(released)} new complaints, {left} still to come", clock_min=st.clock_min);
 }
@@ -216,6 +219,7 @@ impl storm_reset -> Ack {
     ensure_grid();
     _clear_storm();
     run_energiser();
+    run_restorer();
     log_event("reset", "Grid restored to normal; storm cleared");
     return Ack(ok=True, message="Reset to normal grid", clock_min=0.0);
 }
@@ -229,6 +233,24 @@ impl run_energiser {
 
 impl run_dispatcher(minutes: float) {
     root spawn Dispatcher(clock_min=clock(), minutes=minutes);
+}
+
+impl run_restorer {
+    root spawn Restorer();
+}
+
+# Islanded microgrids burn battery with the simulated clock; a flat one stops
+# supplying (the Energiser then re-evaluates the load).
+impl drain_microgrids(minutes: float) {
+    for n in _all_grid_nodes() {
+        if isinstance(n, Microgrid) and n.supplying {
+            n.battery_min = max(0, n.battery_min - int(round(minutes)));
+            if n.battery_min <= 0 {
+                n.islanded = False;
+                log_event("microgrid", f"{n.id} battery is flat: {n.name} has stopped supplying");
+            }
+        }
+    }
 }
 
 # ------------------------------------------------------------------- reads
@@ -280,20 +302,28 @@ impl apply(action_id: str) -> ActionResult {
             return ActionResult(ok=False, message=a.reason, action=a, counters=counters());
         }
         switches: dict[str, Switch] = {};
+        mgs: dict[str, Microgrid] = {};
         for n in _all_grid_nodes() {
             if isinstance(n, Switch) {
                 switches[n.id] = n;
+            } elif isinstance(n, Microgrid) {
+                mgs[n.id] = n;
             }
         }
         for s in a.steps {
             if s.switch_id in switches {
                 switches[s.switch_id].closed = s.action == "close";
+            } elif s.switch_id.endswith("-ISO") and s.switch_id[:-4] in mgs {
+                mgs[s.switch_id[:-4]].isolated = s.action == "open";    # open = isolated
+            } elif s.switch_id in mgs {
+                mgs[s.switch_id].islanded = s.action == "close";
             }
         }
         a.applied = True;
         store.actions = acts;
         run_energiser();
-        log_event("action_applied", f"{a.id} applied: {a.homes_restored} homes restored");
+        run_restorer();
+        log_event("action_applied", f"{a.id} applied: {a.reason}" if a.kind == "microgrid" else f"{a.id} applied: {a.homes_restored} homes restored");
         return ActionResult(ok=True, message=f"Applied {a.id}: {a.homes_restored} homes restored", action=a, counters=counters());
     }
     return ActionResult(ok=False, message=f"No action {action_id}");
@@ -362,7 +392,7 @@ impl grid_view -> GridView {
         }
     }
     for lm in marks.values() {
-        nodes.append(GridNodeView(id=lm.id, kind="landmark", x=lm.x, y=lm.y, label=lm.name, parent_id=lm.section_id, status=state_of.get(lm.section_id, "normal")));
+        nodes.append(GridNodeView(id=lm.id, kind="landmark", x=lm.x, y=lm.y, label=lm.name, parent_id=lm.section_id, has_power=lm.energised, status=state_of.get(lm.section_id, "normal")));
     }
     for c in crews() {
         nodes.append(GridNodeView(id=c.id, kind="crew", x=c.x, y=c.y, label=c.name or c.id, status=c.status_label));
