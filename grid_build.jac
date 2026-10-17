@@ -1,6 +1,6 @@
 """Demo grid builder (WP-A1): the fictional grid from CLAUDE.md §6.1 under root.
 
-1 substation, 2 feeders, 5 sections, 3 switches + tie TS1, 10 transformers,
+1 substation fed by transmission line TL1, 2 feeders, 5 sections, 3 switches + tie TS1, 10 transformers,
 600 homes, 5 priority facilities, Pole 23, 2 microgrids (MG-HOSP on T3, MG-RES
 on T5), 2 depots and 3 crews.
 
@@ -16,6 +16,7 @@ import from grid {
     Feeds,
     Located,
     Substation,
+    TransmissionLine,
     Section,
     Switch,
     Transformer,
@@ -34,6 +35,9 @@ import from grid {
 }
 
 glob FEEDER_CAPACITY: int = 700;
+
+# id, name, kV, x, y: the line from the national grid into SS1
+glob TRANSMISSION: tuple[str, str, int, int, int] = ("TL1", "132 kV line from the national grid", 132, 110, 300);
 
 # id, feeder, x, y
 glob SECTIONS: list[tuple[str, str, int, int]] = [
@@ -116,6 +120,7 @@ def build_grid -> Substation {
     existing = [root -->[?:Substation]];
     if existing {
         _add_microgrids(existing[0]);    # graphs persisted before microgrids existed
+        _add_transmission(existing[0]);
         _ensure_state();
         return existing[0];
     }
@@ -142,6 +147,7 @@ def build_grid -> Substation {
         _transformer(secs[sid], n, x, y, critical, streets);
     }
     _add_microgrids(ss);
+    _add_transmission(ss);
     for (lid, name, sid, x, y) in LANDMARKS {
         lm = Landmark(id=lid, name=name, section_id=sid, x=x, y=y);
         lm +>:Located:+> secs[sid];
@@ -195,6 +201,10 @@ def reset_grid {
         }
     }
 
+    for tl in [root -->[?:TransmissionLine]] {
+        tl.line_ok = True;
+        tl.energised = True;
+    }
     for fn in [root -->[?:FaultNode]] {
         del fn;
     }
@@ -287,6 +297,17 @@ def _transformer(sec: Section, n: int, x: int, y: int, critical: list[str], stre
             i += 1;
         }
     }
+}
+
+"""TL1 under root, feeding SS1, unless it is already there."""
+def _add_transmission(ss: Substation) {
+    if [root -->[?:TransmissionLine]] {
+        return;
+    }
+    (tid, name, kv, x, y) = TRANSMISSION;
+    tl = TransmissionLine(id=tid, name=name, kv=kv, x=x, y=y);
+    root ++> tl;
+    tl +>:Feeds(capacity=2 * FEEDER_CAPACITY):+> ss;
 }
 
 """Hang each microgrid off the transformer it serves, unless it is already there."""

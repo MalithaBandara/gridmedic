@@ -16,6 +16,7 @@ import from grid {
     Transformer,
     Home,
     Landmark,
+    TransmissionLine,
     Localiser,
     FaultNode,
     SimState,
@@ -42,6 +43,7 @@ obj GridIndex {
         child_sections: dict[str, list[str]] = {},    # through normal (non-tie) switches
         parent_section: dict[str, str] = {},
         tx_homes: dict[str, list[Home]] = {},
+        lines: list[TransmissionLine] = [],           # transmission lines into the substation
         landmarks: list[Landmark] = [],
         landmark_of: dict[str, str] = {};             # landmark text -> section id (memo)
 }

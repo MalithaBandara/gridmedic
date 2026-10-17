@@ -27,6 +27,9 @@ def status_colour(status: str, fallback: str) -> str {
 }
 
 def edge_colour(e: GridEdgeView, b: GridNodeView) -> str {
+    if e.kind == "transmission" {
+        return LIVE if b.energised else DEAD;
+    }
     if e.kind == "backup" {
         return RESTORED if b.supplying else DEAD;
     }
@@ -76,7 +79,7 @@ def:pub GridMap(grid: GridView | None) -> JsxElement {
                     x2={pos[e.to_id].x}
                     y2={pos[e.to_id].y}
                     stroke={edge_colour(e, pos[e.to_id])}
-                    strokeWidth={2 if e.kind == "tie" or e.kind == "backup" or pos[e.to_id].kind == "transformer" else 4}
+                    strokeWidth={6 if e.kind == "transmission" else (2 if e.kind == "tie" or e.kind == "backup" or pos[e.to_id].kind == "transformer" else 4)}
                     strokeDasharray={"5,4" if (e.kind == "tie" and not e.closed) or e.kind == "backup" else "0"}
                 />
             }}
@@ -107,6 +110,13 @@ def:pub GridMap(grid: GridView | None) -> JsxElement {
                     <g key={n.id}>
                         <rect x={n.x - 10} y={n.y - 8} width="20" height="16" rx="2" fill="#0f172a" stroke={status_colour(n.status, LIVE if n.energised else DEAD)} strokeWidth="2"/>
                         <text x={n.x} y={n.y + 3} fill="#e2e8f0" fontSize="7" textAnchor="middle">{n.id}</text>
+                    </g>
+                } elif n.kind == "transmission" {
+                    <g key={n.id}>
+                        <line x1="34" y1={n.y} x2={n.x} y2={n.y} stroke={status_colour(n.status, LIVE if n.energised else DEAD)} strokeWidth="6"/>
+                        <path d={f"M{n.x - 8} {n.y + 12} L{n.x} {n.y - 14} L{n.x + 8} {n.y + 12} M{n.x - 10} {n.y - 6} L{n.x + 10} {n.y - 6}"} fill="none" stroke={status_colour(n.status, "#94a3b8")} strokeWidth="1.5"/>
+                        <text x={n.x} y={n.y - 20} fill={status_colour(n.status, "#cbd5e1")} fontSize="8" fontWeight="bold" textAnchor="middle">{n.label}</text>
+                        {(n.status != "normal") and <text x={n.x} y={n.y + 26} fill={status_colour(n.status, FAULT)} fontSize="9" fontWeight="bold" textAnchor="middle">{"⚠ supply lost"}</text>}
                     </g>
                 } elif n.kind == "microgrid" {
                     <g key={n.id}>

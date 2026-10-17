@@ -35,14 +35,16 @@ walker:pub get_grid {
     }
 }
 
-# Starts the storm; complaints are released by tick. reports[0]
+# Starts a scenario; complaints are released by tick. reports[0]
+# scenario: "storm" (default, F1-F4) or "blackout" (transmission line TL1 trips)
 walker:pub start_storm {
     has speed: int = 1,
+        scenario: str = "storm",
         reports: list[Ack] = [];
 
     can run with Root entry {
         with sim.LOCK {
-            report sim.storm_start(self.speed);
+            report sim.storm_start(self.speed, self.scenario);
         }
     }
 }

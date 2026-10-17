@@ -53,6 +53,7 @@ def:pub OperatorApp -> JsxElement {
 
     async def loadInitial -> None;
     async def handleStartStorm -> None;
+    async def handleStartBlackout -> None;
     async def handleReset -> None;
     async def handleTick -> None;
     async def handleSubmitCrewReport -> None;
@@ -1015,6 +1016,24 @@ def:pub OperatorApp -> JsxElement {
                                 {"⏭ Step Tick"}
                             </button>
                         </div>
+
+                        <button
+                            type="button"
+                            onClick={handleStartBlackout}
+                            style={{
+                                "width": "100%",
+                                "padding": "0.45rem",
+                                "backgroundColor": "#7c2d12",
+                                "color": "white",
+                                "border": "none",
+                                "borderRadius": "6px",
+                                "fontSize": "0.8rem",
+                                "fontWeight": "700",
+                                "cursor": "pointer"
+                            }}
+                        >
+                            {"⚡ Start Blackout (transmission line trip)"}
+                        </button>
 
                         {#* Reset Button *#}
                         <button

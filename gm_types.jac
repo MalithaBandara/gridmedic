@@ -15,13 +15,14 @@ sem Hazard.SPARKS = "Sparks, arcing, flashes or a burning smell from lines or tr
 sem Hazard.FIRE = "Flames or a fire at a pole, line, transformer or meter.";
 sem Hazard.TRANSFORMER_NOISE = "A bang, explosion sound, buzzing or humming from a transformer.";
 
-enum FaultKind { LINE_DOWN, TX_FUSE, SERVICE_WIRE, BREAKER_TRIP, UNKNOWN }
+enum FaultKind { LINE_DOWN, TX_FUSE, SERVICE_WIRE, BREAKER_TRIP, UNKNOWN, TRANSMISSION }
 
 sem FaultKind.LINE_DOWN = "A medium-voltage line section is broken or down; everything downstream is off.";
 sem FaultKind.TX_FUSE = "A distribution transformer's fuse has blown; only that transformer's homes are off.";
 sem FaultKind.SERVICE_WIRE = "A low-voltage street or service wire is down; only homes on that street are off.";
 sem FaultKind.BREAKER_TRIP = "A breaker or recloser tripped with no damage found; it can be reset.";
 sem FaultKind.UNKNOWN = "The cause is not known yet.";
+sem FaultKind.TRANSMISSION = "The transmission line (or the substation) feeding the whole area has lost supply; every feeder is off.";
 
 enum FaultStatus { SUSPECTED, CONFIRMED, CREW_ASSIGNED, REPAIRING, RESTORED, CLOSED }
 

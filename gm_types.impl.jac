@@ -25,6 +25,8 @@ impl kind_label(k: FaultKind) -> str {
             return "Service wire";
         case FaultKind.BREAKER_TRIP:
             return "Breaker trip";
+        case FaultKind.TRANSMISSION:
+            return "Transmission line";
         case _:
             return "Unknown";
     }
