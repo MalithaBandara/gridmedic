@@ -88,18 +88,19 @@ glob _WIRE_WORDS: list[str] = [
 glob _NOISE_WORDS: list[str] = ["bang", "loud sound", "loud noise", "explod", "buzz", "සද්දයක්", "පිපිරුම"];
 
 def _has_any(t: str, words: list[str]) -> bool {
-    return any([w in t for w in words]);
+    hit: bool = any([w in t for w in words]) as bool;
+    return hit;
 }
 
 """Offline stand-in for parse_texts/parse_single: keyword rules, same fields, no Gemini.
 Picks the most serious hazard (FIRE, SPARKS, WIRE_DOWN, TRANSFORMER_NOISE) like the model does."""
 def mock_parse(text: str) -> ParsedText {
     t: str = text.lower();
-    latin: list[str] = re.findall("[a-z]+", t);
+    latin: list[str] = re.findall("[a-z]+", t) as list[str];
     has_si: bool = _SI_RE.search(text) is not None;
     has_ta: bool = _TA_RE.search(text) is not None;
-    singlish: bool = any([w in _SINGLISH for w in latin]);
-    english: bool = any([w in _EN_WORDS for w in latin]);
+    singlish: bool = any([w in _SINGLISH for w in latin]) as bool;
+    english: bool = any([w in _EN_WORDS for w in latin]) as bool;
     lang: Lang = Lang.EN;
     if has_ta {
         lang = Lang.MIXED;

@@ -23,6 +23,7 @@ import from gm_types {
     label_fault
 }
 import sim;
+import llm_switch;
 
 # Nodes, edges, clock and counters for the diagram. reports[0]
 walker:pub get_grid {
@@ -42,12 +43,23 @@ walker:pub start_storm {
     has speed: int = 1,
         f5: bool = False,    # also hide a T4 fuse behind F1 (the verifier finds it after the repair)
         scenario: str = "storm",
+        llm_mode: str = "real",    # "mock" = offline rules, no Gemini; anything else = real Gemini
         reports: list[Ack] = [];
 
     can run with Root entry {
         with sim.LOCK {
+            llm_switch.set_mode(self.llm_mode);
             report sim.storm_start(self.speed, self.f5, self.scenario);
         }
+    }
+}
+
+# The language model the simulation uses right now: "mock" or "real". reports[0]
+walker:pub get_llm_mode {
+    has reports: list[str] = [];
+
+    can run with Root entry {
+        report llm_switch.current_mode();
     }
 }
 

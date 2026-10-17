@@ -73,7 +73,8 @@ import from scenario_island { island_complaints, ISLAND_LENGTH_MIN }
 import from agents_parse { parse_batch, parse_one, flag_duplicates }
 import from agents_group { localise_all, group_faults, build_index, section_for_landmark }
 import from agents_explain { explain_fault, fault_key, fallback_explanation }
-import from agents_feedback { parse_crew_report, to_fault_update, pick_fault }
+import from llm_switch { is_mock }
+import from agents_feedback { interpret_crew_report, to_fault_update, pick_fault }
 import from agents_priority { rank_fault_nodes, is_finished }
 
 import threading;

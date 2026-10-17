@@ -147,6 +147,7 @@ impl storm_start(speed: int, f5: bool = False, scenario: str = "storm") -> Ack {
     ensure_grid();
     _clear_storm();
     st = sim_state();
+    log_event("storm", "Language model: " + ("MOCK, offline rules, no Gemini requests" if is_mock() else "REAL, Gemini (uses API quota)"));
     island: bool = scenario == "island";
     blackout: bool = scenario == "blackout" or island;
     # The hidden T4 fuse belongs to the storm; a blackout has no F1 repair.
@@ -587,7 +588,7 @@ impl apply_crew_report(crew_id: str, text: str) -> Fault {
     target: Fault = hits[0];
     log_event("crew_report", f"{crew_id}: {text}", fid);
     try {
-        finding = parse_crew_report(text, target);
+        finding = interpret_crew_report(text, target);
     } except Exception as e {
         log_event("parse_failed", f"Crew report on {fid} could not be interpreted: {str(e)}", fid);
         return label_fault(target);
@@ -679,6 +680,13 @@ impl explain(fault_id: str) -> Fault {
         }
         f = fn.fault;
         key: str = fault_key(f);
+        if is_mock() {
+            # Evidence summary, no Gemini. Keyed apart so a later real run recomputes it.
+            f.explanation = fallback_explanation(label_fault(f));
+            f.explanation_key = "mock:" + key;
+            fn.fault = label_fault(f);
+            return fn.fault;
+        }
         if f.explanation != "" and f.explanation_key == key {
             return label_fault(f);
         }

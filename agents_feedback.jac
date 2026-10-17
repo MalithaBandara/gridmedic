@@ -11,6 +11,7 @@ named landmark ("pole 23") belongs to.
 """
 
 import re;
+import from llm_switch { is_mock }
 import from gm_types { Fault, FaultKind, FaultStatus, FaultUpdate }
 
 # ------------------------------------------------------------- LLM interface
@@ -39,6 +40,59 @@ def parse_crew_report(text: str, fault: Fault) -> CrewFinding by llm();
 sem parse_crew_report = "Interpret a field crew's report about a power fault in a Sri Lankan electricity network and say what changed compared to what the control room believed.";
 sem parse_crew_report.text = "The crew's free-text field report.";
 sem parse_crew_report.fault = "The fault the crew was sent to, as currently believed by the control room.";
+
+# ------------------------------------------------------------ mock interface
+glob _STREET_RE: any = re.compile("(?i)\\b(?:on|at|in)\\s+([a-z]+(?:\\s[a-z]+)?\\s(?:road|lane|street|avenue|place|mawatha))");
+glob _ETA_RE: any = re.compile("(?i)(\\d+)\\s*(?:min|minutes)");
+glob _HEALTHY: list[str] = ["fine", "fuses ok", "fuse ok", "healthy", "intact", "no damage"];
+glob _RESTORED: list[str] = ["restored", "replaced", "supply back", "supply is back", "repaired", "pump running", "back on"];
+
+"""Offline stand-in for parse_crew_report: keyword rules over the crew's note, same fields, no Gemini."""
+def mock_crew_finding(text: str, fault: Fault) -> CrewFinding {
+    t: str = text.lower();
+    healthy: bool = any([w in t for w in _HEALTHY]) as bool;
+    service: bool = "service line" in t or "service wire" in t or "service cable" in t;
+    line: bool = (not service) and (any([w in t for w in ["conductor", "line down", "lines down", "snapped", "pole"]]) as bool);
+    fuse: bool = "fuse" in t and not healthy;
+    restored: bool = any([w in t for w in _RESTORED]) as bool;
+    kind: FaultKind = fault.kind;
+    if service {
+        kind = FaultKind.SERVICE_WIRE;
+    } elif line {
+        kind = FaultKind.LINE_DOWN;
+    } elif fuse {
+        kind = FaultKind.TX_FUSE;
+    }
+    street: str = "";
+    if kind == FaultKind.SERVICE_WIRE {
+        m = _STREET_RE.search(text);
+        if m {
+            street = str(m.group(1)).title();
+        }
+    }
+    device: str = "";
+    if kind == FaultKind.LINE_DOWN and "pole 23" in t and fault.device_id != "F1-B" {
+        device = "F1-B";
+    }
+    eta: int = 0;
+    m2 = _ETA_RE.search(text);
+    if m2 and not restored {
+        eta = int(str(m2.group(1)));
+    }
+    first: str = text.strip().split(". ")[0].strip(".") + "." if text.strip() else "";
+    return CrewFinding(
+        fault_id=fault.id, device_ok=healthy, new_kind=kind, new_device_id=device,
+        street=street, restored=restored, repair_eta_min=eta, note=first
+    );
+}
+
+"""The crew-report reader the simulation calls: the mock rules, or Gemini via parse_crew_report."""
+def interpret_crew_report(text: str, fault: Fault) -> CrewFinding {
+    if is_mock() {
+        return mock_crew_finding(text, fault);
+    }
+    return parse_crew_report(text, fault);
+}
 
 # ------------------------------------------------------------------- helpers
 """Copy the LLM-facing twin into the shared type the graph and API use."""
