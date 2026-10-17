@@ -1,6 +1,6 @@
-# ⚡ GridMedic
-
 <div align="center">
+
+# GridMedic
 
 **Autonomous AI Decision Support for Power Distribution Networks**  
 *Walkers that trace every outage complaint back to its fault.*
