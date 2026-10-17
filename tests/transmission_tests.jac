@@ -26,7 +26,7 @@ def _node(view_id: str) -> GridNodeView {
 
 test "tripping TL1 blacks out the whole grid" {
     _mock_llm();
-    storm_start(5, "blackout");
+    storm_start(5, scenario="blackout");
     assert not _node("TL1").energised;
     assert not _node("SS1").energised;
     assert counters().homes_off == 600;

@@ -146,7 +146,11 @@ node SimState {
         next_complaint_idx: int = 0,
         next_fault_no: int = 1,
         next_complaint_no: int = 1,
-        f5_enabled: bool = False;
+        f5_enabled: bool = False,
+        f5_released: bool = False,                     # follow-up complaints already queued
+        pending: list[Complaint] = [],                 # complaints queued for a later clock time
+        restored_at: dict[str, float] = {},            # fault id -> clock when a crew restored it
+        verified: list[str] = [];                      # restored faults whose check window has closed
 }
 
 # Parsed free-text keyed by raw text. Survives reset (LLM quota).
@@ -242,6 +246,10 @@ walker SafetyCheck {
 # Spawned at root after a repair; looks for complaints that continue (B, WP-B7)
 walker Verifier {
     has clock_min: float = 0.0,
+        restored: dict[str, float] = {},    # fault id -> restore time to check
+        complaints: list[Complaint] = [],   # parsed complaints, enums already restored
+        window_min: float = 5.0,
+        min_reports: int = 3,
         new_fault_ids: list[str] = [];
 
     can check with Root entry;

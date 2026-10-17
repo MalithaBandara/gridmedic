@@ -39,12 +39,13 @@ walker:pub get_grid {
 # scenario: "storm" (default, F1-F4) or "blackout" (transmission line TL1 trips)
 walker:pub start_storm {
     has speed: int = 1,
+        f5: bool = False,    # also hide a T4 fuse behind F1 (the verifier finds it after the repair)
         scenario: str = "storm",
         reports: list[Ack] = [];
 
     can run with Root entry {
         with sim.LOCK {
-            report sim.storm_start(self.speed, self.scenario);
+            report sim.storm_start(self.speed, self.f5, self.scenario);
         }
     }
 }
@@ -129,6 +130,19 @@ walker:pub crew_report {
     can run with Root entry {
         with sim.LOCK {
             report sim.apply_crew_report(self.crew_id, self.text);
+        }
+    }
+}
+
+# Why a fault was found and ranked: reports[0] is the fault with `explanation`
+# filled (2 sentences; cached until the fault changes). Added in WP-B6.
+walker:pub explain {
+    has fault_id: str = "",
+        reports: list[Fault] = [];
+
+    can run with Root entry {
+        with sim.LOCK {
+            report sim.explain(self.fault_id);
         }
     }
 }

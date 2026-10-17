@@ -15,7 +15,7 @@ impl OperatorApp.loadInitial -> None {
     if f_res.reports {
         cur_faults = f_res.reports;
         faults = cur_faults;
-        if len(cur_faults) > 0 and not selected_fault_id {
+        if len(cur_faults) > 0 and not _sel["id"] and not selected_fault_id {
             selected_fault_id = cur_faults[0].id;
         }
     }
@@ -44,13 +44,16 @@ impl OperatorApp.handleStartBlackout -> None {
 }
 
 impl OperatorApp.handleStartStorm -> None {
-    _ = root spawn start_storm(speed=speed);
+    _ = root spawn start_storm(speed=speed, f5=f5_on);
     running = True;
     loadInitial();
 }
 
 impl OperatorApp.handleReset -> None {
     _ = root spawn reset();
+    _sel["id"] = "";
+    selected_fault_id = "";
+    why_text = "";
     running = False;
     loadInitial();
 }
@@ -75,6 +78,14 @@ impl OperatorApp.handleApplyAction(action_id: str) -> None {
         action_message = res.reports[0].message;
     }
     loadInitial();
+}
+
+impl OperatorApp.loadExplanation -> None {
+    res = root spawn explain(fault_id=selected_fault_id);
+    if res.reports and len(res.reports) > 0 {
+        why_text = res.reports[0].explanation;
+        why_id = res.reports[0].id;
+    }
 }
 
 impl OperatorApp.pollTick -> None {

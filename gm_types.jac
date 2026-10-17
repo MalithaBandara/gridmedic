@@ -73,6 +73,8 @@ obj Fault {
         updated_by_crew: bool = False,
         change_note: str = "",
         explanation: str = "",
+        explanation_key: str = "",    # fault state the explanation was written for
+        found_by: str = "",           # "verifier" for a hidden fault found after a repair
         kind_label: str = "",
         hazard_label: str = "",
         status_label: str = "";

@@ -15,6 +15,7 @@ sv import from api {
     tick,
     reset,
     crew_report,
+    explain,
     apply_action
 }
 sv import from gm_types {
@@ -32,6 +33,11 @@ sv import from gm_types {
 # starts a tick while the previous one is still running.
 glob _poll: dict = {"busy": False};
 
+# The operator's chosen fault. The 1 s poll keeps calling a loadInitial whose
+# closure still sees the old (empty) selection and would reset it to the first
+# fault every tick, so the choice lives here, outside any render.
+glob _sel: dict = {"id": ""};
+
 def:pub OperatorApp -> JsxElement {
     has grid: GridView | None = None,
         counters: Counters | None = None,
@@ -43,6 +49,9 @@ def:pub OperatorApp -> JsxElement {
         speed: int = 1,
         running: bool = False,
         selected_fault_id: str = "",
+        f5_on: bool = False,
+        why_text: str = "",
+        why_id: str = "",    # fault the text was written for: slow replies must not show under another fault
         selected_crew_id: str = "CREW-A",
         crew_report_text: str = "",
         action_message: str = "",
@@ -60,6 +69,7 @@ def:pub OperatorApp -> JsxElement {
     async def handleTick -> None;
     async def handleSubmitCrewReport -> None;
     async def handleApplyAction(action_id: str) -> None;
+    async def loadExplanation -> None;
     async def pollTick -> None;
 
     # While a storm runs, advance the simulated clock about once a second
@@ -74,6 +84,15 @@ def:pub OperatorApp -> JsxElement {
 
     hazard_faults: list[Fault] = [f for f in faults if f.hazard_label != "" and f.status_label != "Restored" and f.status_label != "Closed"];
     selected_faults: list[Fault] = [f for f in faults if f.id == selected_fault_id];
+
+    # Ask for the 2-sentence reason when a fault is selected, and again when a
+    # crew report changes it (the server caches it until the fault changes).
+    sel_note: str = selected_faults[0].change_note if len(selected_faults) > 0 else "";
+    useEffect(lambda {
+        if selected_fault_id {
+            loadExplanation();
+        }
+    }, [selected_fault_id, sel_note]);
 
     return
         <div
@@ -407,7 +426,7 @@ def:pub OperatorApp -> JsxElement {
                             {[
                                 <div
                                     key={f.id}
-                                    onClick={lambda { selected_fault_id = f.id; }}
+                                    onClick={lambda { _sel["id"] = f.id; selected_fault_id = f.id; }}
                                     style={{
                                         "padding": "0.6rem",
                                         "borderRadius": "6px",
@@ -540,7 +559,7 @@ def:pub OperatorApp -> JsxElement {
                                 </div>
                                 {sf.street and <div>{"Street: " + sf.street}</div>}
                                 {sf.change_note and <div style={{"color": "#fbbf24"}}>{"Updated by crew report: " + sf.change_note}</div>}
-                                {sf.explanation and <div style={{"fontStyle": "italic"}}>{sf.explanation}</div>}
+                                {why_text and why_id == sf.id and <div style={{"fontStyle": "italic"}}>{why_text}</div>}
                                 {for (k, ev) in enumerate(sf.evidence) {
                                     <div key={str(k)}>{"• " + ev}</div>
                                 }}
@@ -862,6 +881,16 @@ def:pub OperatorApp -> JsxElement {
                                 ]}
                             </div>
                         </div>
+
+                        {#* Optional hidden second fault (F5) *#}
+                        <label style={{"display": "flex", "alignItems": "center", "gap": "0.4rem", "fontSize": "0.75rem", "color": "#94a3b8", "margin": "0.5rem 0", "cursor": "pointer"}}>
+                            <input
+                                type="checkbox"
+                                checked={f5_on}
+                                onChange={lambda e: ChangeEvent { f5_on = e.target.checked; }}
+                            />
+                            {"Hide a second fault (T4 fuse) behind F1 for the verifier"}
+                        </label>
 
                         {#* Primary Action Buttons *#}
                         <div style={{"display": "flex", "gap": "0.5rem"}}>

@@ -116,15 +116,21 @@ impl _clear_storm {
     st.next_complaint_idx = 0;
     st.next_fault_no = 1;
     st.next_complaint_no = 1;
+    st.f5_released = False;
+    st.pending = [];
+    st.restored_at = {};
+    st.verified = [];
     reset_grid();
 }
 
 # ---------------------------------------------------------------- pipeline
-impl storm_start(speed: int, scenario: str = "storm") -> Ack {
+impl storm_start(speed: int, f5: bool = False, scenario: str = "storm") -> Ack {
     ensure_grid();
     _clear_storm();
     st = sim_state();
     blackout: bool = scenario == "blackout";
+    # The hidden T4 fuse belongs to the storm; a blackout has no F1 repair.
+    st.f5_enabled = f5 and not blackout;
     if blackout {
         apply_blackout_truth();
     } else {
@@ -159,10 +165,17 @@ impl storm_tick(minutes: float) -> Ack {
         i += 1;
     }
     st.next_complaint_idx = i;
+    # Queued follow-ups (F5) come due like scenario complaints.
+    due: list[Complaint] = [c for c in st.pending if c.time_min <= st.clock_min];
+    if due {
+        released.extend([_copy(c) for c in due]);
+        st.pending = [c for c in st.pending if c.time_min > st.clock_min];
+    }
     # 3-6, 8
     if released {
         process_complaints(released);
     }
+    run_verifier();
     # 7. C's walkers (no-ops until WP-C3 / WP-C4)
     drain_microgrids(minutes);
     run_energiser();
@@ -250,6 +263,31 @@ impl run_energiser {
     if subs {
         subs[0] spawn Energiser();
     }
+}
+
+impl run_verifier {
+    st = sim_state();
+    todo: dict[str, float] = {k: v for (k, v) in st.restored_at.items() if k not in st.verified};
+    if len(todo) == 0 {
+        return;
+    }
+    w = Verifier(clock_min=clock(), restored=todo, complaints=[fix_complaint(c) for c in complaint_log().items]);
+    root spawn w;
+    if len(w.new_fault_ids) > 0 {
+        ranked = rank_fault_nodes(clock());
+        for f in ranked {
+            if f.id in w.new_fault_ids {
+                log_event("verify", f"{f.id}: {f.kind.name}@{f.device_id} found - {f.evidence[-1]}", f.id);
+            }
+        }
+    }
+    done: list[str] = list(st.verified);
+    for (k, t0) in todo.items() {
+        if clock() > t0 + w.window_min {
+            done.append(k);
+        }
+    }
+    st.verified = done;
 }
 
 impl run_dispatcher(minutes: float) {
@@ -477,6 +515,15 @@ impl apply_crew_report(crew_id: str, text: str) -> Fault {
     }
     done: Fault = walker_.result;
     if update.restored {
+        st = sim_state();
+        marks: dict[str, float] = dict(st.restored_at);
+        marks[done.id] = clock();
+        st.restored_at = marks;
+        if st.f5_enabled and not st.f5_released and done.kind == FaultKind.LINE_DOWN {
+            st.pending = list(st.pending) + f5_followup_complaints(clock() + 0.5);
+            st.f5_released = True;
+        }
+        log_event("verify", f"Watching the homes below {done.device_id} for new complaints after the repair", done.id);
         _restore_truth(done);
         run_energiser();
         log_event("restored", f"{done.id}: {done.kind.name}@{done.device_id} restored - crew report", done.id);
@@ -538,6 +585,37 @@ impl _restore_truth(f: Fault) {
             }
         }
     }
+}
+
+impl explain(fault_id: str) -> Fault {
+    for fn in [root -->[?:FaultNode]] {
+        if fn.fault.id != fault_id {
+            continue;
+        }
+        f = fn.fault;
+        key: str = fault_key(f);
+        if f.explanation != "" and f.explanation_key == key {
+            return label_fault(f);
+        }
+        text: str = "";
+        try {
+            text = explain_fault(f).strip();
+        } except Exception as e {
+            if f.explanation_key != "fallback:" + key {
+                log_event("explain_failed", f"{f.id}: LLM explanation unavailable, using the evidence summary ({str(e)})", f.id);
+            }
+        }
+        if text != "" {
+            f.explanation = text;
+            f.explanation_key = key;
+        } else {
+            f.explanation = fallback_explanation(label_fault(f));
+            f.explanation_key = "fallback:" + key;    # retried on the next request
+        }
+        fn.fault = label_fault(f);    # reassign so the change persists
+        return fn.fault;
+    }
+    return label_fault(Fault(id="", kind=FaultKind.UNKNOWN, device_id="", homes_affected=0, change_note=f"No fault {fault_id}"));
 }
 
 impl customer_status(consumer_no: str) -> CustomerStatus {

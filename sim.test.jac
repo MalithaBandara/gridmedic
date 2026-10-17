@@ -3,6 +3,7 @@ scenario. The exact F1-F4 expectations live in A3's tests/*_tests.jac."""
 
 import agents_parse;
 import agents_feedback;
+import agents_explain;
 import from byllm.lib { MockLLM }
 import from agents_parse { LlmParsed }
 import from agents_feedback { CrewFinding }
@@ -166,4 +167,53 @@ test "an LLM failure leaves the fault alone and logs parse_failed" {
     f = apply_crew_report("C", "T9 is fine, Lake Road line down");
     assert f.id == "F4" and f.kind == FaultKind.TX_FUSE and not f.updated_by_crew;
     assert len([e for e in event_log().events if e.kind == "parse_failed"]) == 1;
+}
+
+# ------------------------------------------------------- WP-B6 explanations
+def _mock_explain(outputs: list) {
+    agents_explain.llm = MockLLM(model_name="mockllm", config={"outputs": outputs});
+}
+
+test "explain caches the text and does not call the LLM again" {
+    _crew_fixture();
+    _mock_explain(["Complaints cluster under T8. Ranked by homes."]);
+    a = explain("F2");
+    assert a.explanation == "Complaints cluster under T8. Ranked by homes.";
+    b = explain("F2");    # the mock has no output left: a second call would fail
+    assert b.explanation == a.explanation;
+    assert [e.kind for e in event_log().events].count("explain_failed") == 0;
+}
+
+test "explain recomputes after a crew report changes the fault" {
+    _crew_fixture();
+    _mock_explain(["First reading of T9.", "After the crew: a Lake Road wire."]);
+    assert explain("F4").explanation == "First reading of T9.";
+    _mock_crew(CrewFinding(fault_id="F4", device_ok=True, new_kind=FaultKind.SERVICE_WIRE, street="Lake Road", note="line down"));
+    apply_crew_report("C", "T9 fine, Lake Road line down");
+    _mock_explain(["After the crew: a Lake Road wire."]);
+    assert explain("F4").explanation == "After the crew: a Lake Road wire.";
+}
+
+test "an LLM failure falls back to the evidence summary and is retried" {
+    _crew_fixture();
+    _mock_explain([]);
+    a = explain("F1");
+    assert "F1-B" in a.explanation and "205 homes" in a.explanation;
+    assert [e.kind for e in event_log().events].count("explain_failed") == 1;
+    explain("F1");
+    assert [e.kind for e in event_log().events].count("explain_failed") == 1;    # logged once
+    _mock_explain(["Real model text."]);
+    assert explain("F1").explanation == "Real model text.";
+}
+
+test "explain on an unknown fault returns an empty fault" {
+    _crew_fixture();
+    assert explain("F99").id == "";
+}
+
+test "start_storm hides the T4 fuse only when f5 is asked for" {
+    storm_start(1, True);
+    assert sim_state().f5_enabled and not _node("T4").fuse_ok;
+    storm_start(1);
+    assert not sim_state().f5_enabled and _node("T4").fuse_ok;
 }
