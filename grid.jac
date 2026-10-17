@@ -15,6 +15,9 @@ import from gm_types {
     Crew,
     Fault,
     FaultUpdate,
+    FaultKind,
+    FaultStatus,
+    label_fault,
     ParsedText,
     Event,
     Complaint,
@@ -172,6 +175,7 @@ walker CrewReport {
         fault_id: str = "",
         text: str = "",
         update: FaultUpdate | None = None,
+        homes: int = 0,    # new homes_affected computed by sim; 0 keeps the current count
         changed: bool = False,
         before: str = "",
         after: str = "",

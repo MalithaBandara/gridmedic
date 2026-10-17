@@ -119,19 +119,14 @@ walker:pub get_tasks {
 }
 
 # A field crew's free-text report; returns the fault after the update. reports[0]
-# WP-B5 replaces this body with parse_crew_report + the CrewReport walker.
 walker:pub crew_report {
     has crew_id: str = "",
         text: str = "",
         reports: list[Fault] = [];
 
     can run with Root entry {
-        f = sim.crew_fault(self.crew_id);
-        if f is None {
-            report label_fault(Fault(id="", kind=FaultKind.UNKNOWN, device_id="", homes_affected=0, change_note=f"{self.crew_id} has no assigned fault"));
-        } else {
-            sim.log_event("crew_report", f"{self.crew_id}: {self.text}", f.id);
-            report f;
+        with sim.LOCK {
+            report sim.apply_crew_report(self.crew_id, self.text);
         }
     }
 }

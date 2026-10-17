@@ -15,7 +15,9 @@ Only this module orchestrates. grid.jac never imports it (no cycles).
 import from gm_types {
     Complaint,
     Fault,
+    FaultKind,
     FaultStatus,
+    FaultUpdate,
     Crew,
     CrewTask,
     CrewStatus,
@@ -50,6 +52,7 @@ import from grid {
     ActionStore,
     Energiser,
     Dispatcher,
+    CrewReport,
     Snapshot,
     children,
     parents
@@ -58,7 +61,8 @@ import from grid_build { build_grid, reset_grid }
 # Placeholder storm until WP-A2 lands: switch this line to grid_storm then.
 import from scenario_placeholder { generate_complaints, apply_storm_truth }
 import from agents_parse { parse_batch, parse_one, flag_duplicates }
-import from agents_group { localise_all, group_faults }
+import from agents_group { localise_all, group_faults, build_index, section_for_landmark }
+import from agents_feedback { parse_crew_report, to_fault_update, pick_fault }
 import from agents_priority { rank_fault_nodes, is_finished }
 
 import threading;
@@ -104,6 +108,9 @@ def grid_view -> GridView;
 def customer_status(consumer_no: str) -> CustomerStatus;
 def crew_fault(crew_id: str) -> Fault | None;
 
+"""A crew's free-text report: pick the fault, parse it by LLM, let the FaultNode re-evaluate, re-rank, log. Returns the fault after the update."""
+def apply_crew_report(crew_id: str, text: str) -> Fault;
+
 # ---------------------------------------------------------------- helpers
 def _scenario -> list[Complaint];
 def _copy(c: Complaint) -> Complaint;
@@ -111,3 +118,5 @@ def _clear_storm;
 def _fault_key(f: Fault) -> str;
 def _all_grid_nodes -> list[GridNode];
 def _upstream_ids(h: Home) -> list[str];
+def _homes_for(f: Fault, u: FaultUpdate) -> int;
+def _restore_truth(f: Fault);

@@ -2,8 +2,10 @@
 scenario. The exact F1-F4 expectations live in A3's tests/*_tests.jac."""
 
 import agents_parse;
+import agents_feedback;
 import from byllm.lib { MockLLM }
 import from agents_parse { LlmParsed }
+import from agents_feedback { CrewFinding }
 import from gm_types { Hazard, Lang }
 import from grid { ParseCache }
 
@@ -85,4 +87,81 @@ test "a replay after reset makes no LLM calls" {
     _run_storm(42);
     assert agents_parse.LLM_CALLS == 0;
     assert len(ranked_faults()) >= 1;
+}
+
+# ------------------------------------------------------- WP-B5 crew reports
+def _crew_fixture {
+    storm_start(1);
+    root ++> FaultNode(fault=Fault(id="F1", kind=FaultKind.LINE_DOWN, device_id="F1-B", homes_affected=205, confidence=0.8));
+    root ++> FaultNode(fault=Fault(id="F2", kind=FaultKind.TX_FUSE, device_id="T8", homes_affected=40, confidence=0.8));
+    root ++> FaultNode(fault=Fault(id="F4", kind=FaultKind.TX_FUSE, device_id="T9", homes_affected=75, confidence=0.4));
+}
+
+def _mock_crew(f: CrewFinding) {
+    agents_feedback.llm = MockLLM(model_name="mockllm", config={"outputs": [f]});
+}
+
+def _node(nid: str) -> any {
+    for n in _all_grid_nodes() {
+        if n.id == nid {
+            return n;
+        }
+    }
+    return None;
+}
+
+test "crew report turns the T9 fuse guess into a Lake Road service wire" {
+    _crew_fixture();
+    _mock_crew(CrewFinding(fault_id="F4", device_ok=True, new_kind=FaultKind.SERVICE_WIRE, street="Lake Road", note="Overhead service line down on Lake Road"));
+    f = apply_crew_report("C", "T9 transformer is fine, fuses OK. Other streets have power. Overhead service line down on Lake Road.");
+    assert f.id == "F4" and f.kind == FaultKind.SERVICE_WIRE and f.street == "Lake Road";
+    assert f.homes_affected == 15 and f.confidence >= 0.8 and f.updated_by_crew;
+    assert f.status == FaultStatus.CONFIRMED;
+    assert f.change_note == "TX_FUSE@T9 (conf 0.4) -> SERVICE_WIRE@Lake Road (conf 0.9) - crew report";
+    ev = [e for e in event_log().events if e.kind == "mind_change"];
+    assert len(ev) == 1 and ev[0].fault_id == "F4" and "TX_FUSE@T9" in ev[0].text;
+}
+
+test "crew report confirms the line fault by landmark and sets the repair eta" {
+    _crew_fixture();
+    _mock_crew(CrewFinding(fault_id="F1", device_ok=False, new_kind=FaultKind.LINE_DOWN, repair_eta_min=90, note="Conductor snapped at pole 23"));
+    f = apply_crew_report("A", "Conductor snapped at pole 23, area made safe. Repair needs ~90 min.");
+    assert f.id == "F1" and f.status == FaultStatus.CONFIRMED and f.eta_min == 90;
+    assert f.kind == FaultKind.LINE_DOWN and f.homes_affected == 205;
+    assert len([e for e in event_log().events if e.kind == "mind_change"]) == 0;
+}
+
+test "a restored report puts the physical truth back to ok" {
+    _crew_fixture();
+    assert not _node("T8").fuse_ok;
+    _mock_crew(CrewFinding(fault_id="F2", device_ok=False, new_kind=FaultKind.TX_FUSE, restored=True, note="Fuse replaced"));
+    f = apply_crew_report("B", "T8 HT fuse blown, replaced. Supply restored.");
+    assert f.id == "F2" and f.status == FaultStatus.RESTORED;
+    assert _node("T8").fuse_ok;
+    assert ranked_faults()[-1].id == "F2";
+    assert len([e for e in event_log().events if e.kind == "restored"]) == 1;
+}
+
+test "a repaired line clears the recloser lockout" {
+    _crew_fixture();
+    assert not _node("F1-B").line_ok and _node("SW1").locked_out;
+    _mock_crew(CrewFinding(fault_id="F1", device_ok=False, new_kind=FaultKind.LINE_DOWN, restored=True));
+    apply_crew_report("A", "Conductor repaired at pole 23, line restored");
+    assert _node("F1-B").line_ok and not _node("SW1").locked_out and _node("SW1").closed;
+}
+
+test "a report that matches no fault changes nothing" {
+    _crew_fixture();
+    _mock_crew(CrewFinding(fault_id="", device_ok=True, new_kind=FaultKind.UNKNOWN));
+    f = apply_crew_report("C", "all quiet at the depot");
+    assert f.id == "" and "does not match" in f.change_note;
+    assert len([e for e in event_log().events if e.kind == "mind_change"]) == 0;
+}
+
+test "an LLM failure leaves the fault alone and logs parse_failed" {
+    _crew_fixture();
+    agents_feedback.llm = MockLLM(model_name="mockllm", config={"outputs": []});
+    f = apply_crew_report("C", "T9 is fine, Lake Road line down");
+    assert f.id == "F4" and f.kind == FaultKind.TX_FUSE and not f.updated_by_crew;
+    assert len([e for e in event_log().events if e.kind == "parse_failed"]) == 1;
 }

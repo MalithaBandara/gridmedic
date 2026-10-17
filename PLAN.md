@@ -23,7 +23,7 @@
 | B2 Localiser + grouping | B | ✅ | One Localiser spawn per tick: 109 complaints in 0.4 s. |
 | B3 Prioritiser | B | ✅ | Test 7 order passes. |
 | B4 Sim + real API | B | ✅ | ~1 s per tick at 1×. `sim.LOCK` serialises the writer endpoints. All module tests pass on the A1 grid. Still to do: re-verify F1–F4 (hazards included) on A2's complaints. |
-| B5 Crew-report feedback | B | 🔴 next | The `crew_report` endpoint currently only logs the text. Needs `agents_feedback.jac` + `grid.impl/feedback.impl.jac` (F4 mind-change, RESTORED → physical truth back to ok). |
+| B5 Crew-report feedback | B | ✅ | `agents_feedback.jac` (`parse_crew_report` by llm + `pick_fault` routing), `CrewReport.find` / `FaultNode.reevaluate`, `sim.apply_crew_report`, real `crew_report` endpoint. 5 unit + 6 sim MockLLM tests; test 6 passes (F4 -> SERVICE_WIRE, Lake Road, 15 homes, conf 0.9). Restored reports reset fuse_ok / line_ok / service_ok (and the recloser lockout) then run the Energiser. Added `CrewReport.homes` field. Live Gemini unverified (no key); with no key the endpoint logs `parse_failed` and leaves the fault unchanged. |
 | B6 Explainer + noise | B | 🔴 | `explain_fault` by llm() + an `explain` endpoint. Duplicates are already logged. |
 | B7 Verifier | B | 🔴 T3 | Needs B5 and C3. |
 | C0 UI shell + routing | C | ✅ merged | `/` operator, `/customer`. |
@@ -31,7 +31,7 @@
 | C2 Panels + poll loop | C | ✅ basic | Auto-tick every 1 s while running (never overlapping), live counters, faults, crews, events, Why? evidence. |
 | C3 Energiser | C | 🔴 **blocker** | `energise.impl.jac` is empty, so "homes off" stays 0 and sections never grey out. Use `children()`/`parents()`, not typed edges (§6). |
 | C4 Dispatcher | C | 🔴 | `dispatch.impl.jac` is empty, so crews stay idle. `sim.run_dispatcher` already spawns it every tick with `clock_min` and `minutes`. |
-| C5 Crew box + mind-change | C | 🟡 | The box and presets exist. Mind-change highlight waits on B5. |
+| C5 Crew box + mind-change | C | 🟡 | The box and presets exist. B5 is in: faults now carry `updated_by_crew` and `change_note`, and a `mind_change` event is logged. |
 | C6 Customer page | C | 🟡 | Report + status + SMS panel are wired to the real `submit_complaint`/`get_status`. Check the 3 s poll and status-change SMS. |
 | C7 Restorer + SafetyCheck | C | 🔴 T3 | Needs C3 + C4. `sim.apply()` already executes the switching steps of a safe action. |
 

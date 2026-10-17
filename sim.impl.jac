@@ -380,6 +380,104 @@ impl crew_fault(crew_id: str) -> Fault | None {
     return None;
 }
 
+impl apply_crew_report(crew_id: str, text: str) -> Fault {
+    nodes = [root -->[?:FaultNode]];
+    faults: list[Fault] = [fn.fault for fn in nodes];
+    task_id: str = "";
+    for c in crews() {
+        if c.id == crew_id {
+            task_id = c.task_fault_id;
+        }
+    }
+    landmark_sec: str = section_for_landmark(build_index(), text);
+    fid: str = pick_fault(task_id, text, faults, landmark_sec);
+    if fid == "" {
+        log_event("crew_report", f"{crew_id}: {text} (no matching fault found)");
+        return label_fault(Fault(id="", kind=FaultKind.UNKNOWN, device_id="", homes_affected=0, change_note=f"{crew_id}: report does not match any active fault"));
+    }
+    hits: list[Fault] = [f for f in faults if f.id == fid];
+    if not hits {
+        return label_fault(Fault(id="", kind=FaultKind.UNKNOWN, device_id="", homes_affected=0));
+    }
+    target: Fault = hits[0];
+    log_event("crew_report", f"{crew_id}: {text}", fid);
+    try {
+        finding = parse_crew_report(text, target);
+    } except Exception as e {
+        log_event("parse_failed", f"Crew report on {fid} could not be interpreted: {str(e)}", fid);
+        return label_fault(target);
+    }
+    update = to_fault_update(finding, fid);
+    walker_ = CrewReport(crew_id=crew_id, fault_id=fid, text=text, update=update, homes=_homes_for(target, update));
+    root spawn walker_;
+    if walker_.result is None {
+        return label_fault(target);
+    }
+    done: Fault = walker_.result;
+    if update.restored {
+        _restore_truth(done);
+        run_energiser();
+        log_event("restored", f"{done.id}: {done.kind.name}@{done.device_id} restored - crew report", done.id);
+    } elif walker_.changed {
+        log_event("mind_change", f"{done.id}: {done.change_note}", done.id);
+    } else {
+        log_event("fault_update", f"{done.id}: {done.change_note}", done.id);
+    }
+    for f in rank_fault_nodes(clock()) {
+        if f.id == fid {
+            return f;
+        }
+    }
+    return done;
+}
+
+# homes_affected after the update, or 0 to keep the current count.
+impl _homes_for(f: Fault, u: FaultUpdate) -> int {
+    kind = u.new_kind if u.new_kind != FaultKind.UNKNOWN else f.kind;
+    device = u.new_device_id if u.new_device_id != "" else f.device_id;
+    street = u.street if u.street != "" else f.street;
+    if kind == FaultKind.LINE_DOWN or (kind == FaultKind.SERVICE_WIRE and street == "") {
+        return 0;
+    }
+    for n in _all_grid_nodes() {
+        if isinstance(n, Transformer) and n.id == device {
+            if kind == FaultKind.TX_FUSE {
+                return n.homes;
+            }
+            return len([h for h in children(n) if isinstance(h, Home) and h.street.lower() == street.lower()]);
+        }
+    }
+    return 0;
+}
+
+# A repaired fault puts the physical truth back to ok, so the Energiser powers
+# the homes again. A repaired line also clears the lockout of the recloser above it.
+impl _restore_truth(f: Fault) {
+    for n in _all_grid_nodes() {
+        if n.id != f.device_id {
+            continue;
+        }
+        if isinstance(n, Transformer) {
+            n.fuse_ok = True;
+            ok: dict[str, bool] = dict(n.service_ok);
+            for s in list(ok.keys()) {
+                if f.kind == FaultKind.SERVICE_WIRE and s.lower() == f.street.lower() {
+                    ok[s] = True;
+                }
+            }
+            n.service_ok = ok;
+        } elif isinstance(n, Section) {
+            n.line_ok = True;
+            for p in parents(n) {
+                if isinstance(p, Switch) and p.locked_out {
+                    p.locked_out = False;
+                    p.closed = True;
+                }
+            }
+        }
+    }
+}
+
 impl customer_status(consumer_no: str) -> CustomerStatus {
     log_event("status_checked", f"Status checked for {consumer_no}");
     home: Home | None = None;
