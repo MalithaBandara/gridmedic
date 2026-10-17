@@ -17,7 +17,15 @@ import from api {
     apply_action,
     get_events,
     get_status,
+    get_llm_mode,
     reset
+}
+import llm_switch;
+
+# Quota safety: a freshly started server never calls Gemini until the operator
+# explicitly picks the real model for a run (the dashboard asks first).
+with entry {
+    llm_switch.set_mode("mock");
 }
 
 # Client-side UI & Routing

@@ -43,7 +43,7 @@ walker:pub start_storm {
     has speed: int = 1,
         f5: bool = False,    # also hide a T4 fuse behind F1 (the verifier finds it after the repair)
         scenario: str = "storm",
-        llm_mode: str = "real",    # "mock" = offline rules, no Gemini; anything else = real Gemini
+        llm_mode: str = "mock",    # "mock" = offline rules, no Gemini; "real" = Gemini (uses quota)
         reports: list[Ack] = [];
 
     can run with Root entry {

@@ -2,10 +2,11 @@
 
 Mock mode must never reach Gemini and never write the persisted ParseCache. No Gemini
 key is needed to run this file; any real call would fail loudly.
-    jac clean --all --force; jac test llm_switch.test.jac -v
+    jac clean --all --force; jac test tests/llm_switch_tests.jac -v
 """
 
 import agents_parse;
+import from llm_switch { current_mode, is_mock, set_mode }
 import from gm_types { FaultKind, FaultStatus, Fault, Hazard, Lang }
 import from grid { ParseCache }
 

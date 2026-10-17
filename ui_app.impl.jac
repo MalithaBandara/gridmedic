@@ -36,8 +36,19 @@ impl OperatorApp.loadInitial -> None {
     }
 }
 
+impl OperatorApp.syncMode -> None {
+    res = root spawn get_llm_mode();
+    if res.reports and len(res.reports) > 0 {
+        llm_real = res.reports[0] == "real";
+    }
+}
+
 impl OperatorApp.handleStartStorm -> None {
-    _ = root spawn start_storm(speed=speed, f5=f5_on, scenario=scenario);
+    if llm_real and not allow_real {
+        return;
+    }
+    mode: str = "real" if llm_real else "mock";
+    _ = root spawn start_storm(speed=speed, f5=f5_on, scenario=scenario, llm_mode=mode);
     running = True;
     loadInitial();
 }

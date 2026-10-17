@@ -11,6 +11,7 @@ sv import from api {
     get_events,
     get_crews,
     get_actions,
+    get_llm_mode,
     start_storm,
     tick,
     reset,
@@ -51,6 +52,8 @@ def:pub OperatorApp -> JsxElement {
         selected_fault_id: str = "",
         f5_on: bool = False,
         scenario: str = "storm",
+        llm_real: bool = False,      # False = mock model (offline, free); True = real Gemini
+        allow_real: bool = False,    # the operator's explicit OK for Gemini requests; cleared when scenario or model changes
         why_text: str = "",
         why_id: str = "",    # fault the text was written for: slow replies must not show under another fault
         selected_crew_id: str = "CREW-A",
@@ -61,9 +64,11 @@ def:pub OperatorApp -> JsxElement {
 
     can with entry {
         loadInitial();
+        syncMode();
     }
 
     async def loadInitial -> None;
+    async def syncMode -> None;
     async def handleStartStorm -> None;
     async def handleReset -> None;
     async def handleTick -> None;
@@ -85,6 +90,8 @@ def:pub OperatorApp -> JsxElement {
     hazard_faults: list[Fault] = [f for f in faults if f.hazard_label != "" and f.status_label != "Restored" and f.status_label != "Closed"];
     selected_faults: list[Fault] = [f for f in faults if f.id == selected_fault_id];
     scenario_label: str = "Storm" if scenario == "storm" else ("Blackout" if scenario == "blackout" else "Island Collapse");
+    real_estimate: str = "about 6 requests (15 distinct messages)" if scenario == "storm" else ("about 2 to 4 requests (4 distinct messages)" if scenario == "blackout" else "about 6 to 8 requests (15 distinct messages in 4 scripts)");
+    start_blocked: bool = llm_real and not allow_real and not running;
 
     # Ask for the 2-sentence reason when a fault is selected, and again when a
     # crew report changes it (the server caches it until the fault changes).
@@ -804,7 +811,7 @@ def:pub OperatorApp -> JsxElement {
                                     <button
                                         key={sid}
                                         type="button"
-                                        onClick={lambda { scenario = sid; }}
+                                        onClick={lambda { scenario = sid; allow_real = False; }}
                                         style={{
                                             "textAlign": "left",
                                             "padding": "0.35rem 0.5rem",
@@ -821,6 +828,58 @@ def:pub OperatorApp -> JsxElement {
                                 }}
                             </div>
                         </div>
+
+                        {#* Language model: mock (offline, free) or real (Gemini, uses quota) *#}
+                        <div>
+                            <div style={{"fontSize": "0.68rem", "color": "#94a3b8", "marginBottom": "0.25rem"}}>
+                                {"Language model"}
+                            </div>
+                            <div style={{"display": "flex", "gap": "0.35rem"}}>
+                                {for (mid, mlabel, mdesc) in [
+                                    ("mock", "Mock model", "Offline rules, free"),
+                                    ("real", "Real model", "Gemini, uses quota")
+                                ] {
+                                    <button
+                                        key={mid}
+                                        type="button"
+                                        onClick={lambda { llm_real = (mid == "real"); allow_real = False; }}
+                                        style={{
+                                            "flex": "1",
+                                            "textAlign": "left",
+                                            "padding": "0.35rem 0.5rem",
+                                            "borderRadius": "4px",
+                                            "border": "1px solid " + (("#b45309" if mid == "real" else "#475569") if (llm_real == (mid == "real")) else "#1e293b"),
+                                            "cursor": "pointer",
+                                            "backgroundColor": "#1e293b" if (llm_real == (mid == "real")) else "#090d16",
+                                            "color": "#f8fafc" if (llm_real == (mid == "real")) else "#64748b"
+                                        }}
+                                    >
+                                        <div style={{"fontSize": "0.75rem", "fontWeight": "600"}}>{mlabel}</div>
+                                        <div style={{"fontSize": "0.62rem", "opacity": "0.8"}}>{mdesc}</div>
+                                    </button>
+                                }}
+                            </div>
+                        </div>
+
+                        {#* Real model: say what it costs and ask before any Gemini request *#}
+                        {if llm_real {
+                            <div key="real-warning" style={{"padding": "0.45rem 0.5rem", "borderRadius": "4px", "border": "1px solid #b45309", "backgroundColor": "#1c1209", "display": "flex", "flexDirection": "column", "gap": "0.3rem"}}>
+                                <div style={{"fontSize": "0.7rem", "fontWeight": "700", "color": "#fbbf24"}}>
+                                    {"This run calls Gemini (500 requests/day limit)"}
+                                </div>
+                                <div style={{"fontSize": "0.65rem", "color": "#d6b676"}}>
+                                    {"Estimate: " + real_estimate + ", plus 1 per crew report and 1 per Why? you open. Messages already cached cost nothing."}
+                                </div>
+                                <label style={{"display": "flex", "alignItems": "center", "gap": "0.35rem", "fontSize": "0.7rem", "color": "#fde68a", "cursor": "pointer"}}>
+                                    <input
+                                        type="checkbox"
+                                        checked={allow_real}
+                                        onChange={lambda (e: ChangeEvent) { allow_real = e.target.checked; }}
+                                    />
+                                    {"Allow Gemini requests for this run"}
+                                </label>
+                            </div>
+                        }}
 
                         {#* Speed Selector *#}
                         <div>
@@ -868,10 +927,12 @@ def:pub OperatorApp -> JsxElement {
                             <button
                                 type="button"
                                 onClick={handleStartStorm}
+                                disabled={start_blocked}
                                 style={{
                                     "flex": "1",
                                     "padding": "0.45rem",
-                                    "backgroundColor": "#ea580c" if running else "#16a34a",
+                                    "opacity": "0.45" if start_blocked else "1",
+                                    "backgroundColor": "#ea580c" if running else ("#b45309" if llm_real else "#16a34a"),
                                     "color": "white",
                                     "border": "none",
                                     "borderRadius": "4px",
@@ -880,7 +941,7 @@ def:pub OperatorApp -> JsxElement {
                                     "cursor": "pointer"
                                 }}
                             >
-                                {("Pause" if running else "Start " + scenario_label)}
+                                {("Pause" if running else "Start " + scenario_label + (" (Gemini)" if llm_real else " (mock)"))}
                             </button>
 
                             <button
