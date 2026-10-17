@@ -1,6 +1,9 @@
-# Live Gemini smoke test: one typed by llm() call per phrase.
-# Makes 6 real API calls. Run only when needed: jac run scripts/smoke_llm.jac
+# Live Gemini smoke test: one typed by llm() call per phrase, in English,
+# Sinhala script, Sinhala in Latin letters ("Singlish"), mixed, and Tamil.
+# Makes 17 real API calls. Run only when needed: jac run scripts/smoke_llm.jac
 # Needs GEMINI_API_KEY and JAC_OPT_LEVEL=0 in the environment.
+# Tamil has no Lang value yet (gm_types has EN, SI, MIXED), so only its hazard
+# is checked; its language is printed. Tamil phrases need a native speaker's check.
 
 enum Hazard { NONE, WIRE_DOWN, SPARKS, FIRE, TRANSFORMER_NOISE }
 sem Hazard.NONE = "No danger mentioned, just a loss of power.";
@@ -11,8 +14,8 @@ sem Hazard.TRANSFORMER_NOISE = "A bang, buzz or loud sound from a transformer.";
 
 enum Lang { EN, SI, MIXED }
 sem Lang.EN = "English";
-sem Lang.SI = "Sinhala";
-sem Lang.MIXED = "A mix of Sinhala and English";
+sem Lang.SI = "Sinhala (Sinhala script or Sinhala written in Latin letters)";
+sem Lang.MIXED = "A mix of Sinhala and English, or any other language";
 
 obj SmokeParsed {
     has lang: Lang = Lang.EN,
@@ -24,17 +27,29 @@ sem SmokeParsed.hazard = "The most serious safety hazard the complaint mentions,
 sem SmokeParsed.landmark = "A named location like 'pole 23' or 'near the temple', if mentioned; else empty.";
 
 def parse_one(raw: str) -> SmokeParsed by llm();
-sem parse_one = "Parse one power-outage complaint from a Sri Lankan electricity customer (English or Sinhala).";
+sem parse_one = "Parse one power-outage complaint from a Sri Lankan electricity customer (English, Sinhala in Sinhala script or Latin letters, or Tamil).";
 sem parse_one.raw = "The complaint text.";
 
-# (text, expected hazard) pairs from CLAUDE.md §6.3
+# (text, expected hazard): CLAUDE.md §6.3, then the same meanings in Singlish,
+# mixed Sinhala-English and Tamil.
 glob CASES: list[tuple[str, Hazard]] = [
     ("Wire fallen on the road near pole 23, sparks!", Hazard.WIRE_DOWN),
     ("විදුලිය නැහැ", Hazard.NONE),
     ("රෑ 7 ඉඳන් කරන්ට් නැහැ", Hazard.NONE),
     ("කණුව ළඟ වයරයක් බිම වැටිලා තියෙනවා", Hazard.WIRE_DOWN),
     ("ගිනි පුපුරු එනවා", Hazard.SPARKS),
-    ("ට්‍රාන්ස්ෆෝමරයෙන් සද්දයක් ආවා", Hazard.TRANSFORMER_NOISE)
+    ("ට්‍රාන්ස්ෆෝමරයෙන් සද්දයක් ආවා", Hazard.TRANSFORMER_NOISE),
+    ("widuliya naha", Hazard.NONE),
+    ("re 7 indan current naha", Hazard.NONE),
+    ("kanuwa langa wire ekak bima watila thiyenawa", Hazard.WIRE_DOWN),
+    ("gini pupuru enawa", Hazard.SPARKS),
+    ("transformer eken saddayak awa", Hazard.TRANSFORMER_NOISE),
+    ("Pole 23 langa wire eka watila, current naha", Hazard.WIRE_DOWN),
+    ("மின்சாரம் இல்லை", Hazard.NONE),
+    ("இரவு 7 மணியிலிருந்து கரண்ட் இல்லை", Hazard.NONE),
+    ("கம்பத்துக்கு அருகில் கம்பி கீழே விழுந்து கிடக்கிறது", Hazard.WIRE_DOWN),
+    ("தீப்பொறிகள் வருகின்றன", Hazard.SPARKS),
+    ("டிரான்ஸ்பார்மரில் இருந்து பெரிய சத்தம் வந்தது", Hazard.TRANSFORMER_NOISE)
 ];
 
 with entry:__main__ {
