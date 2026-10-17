@@ -13,7 +13,6 @@ import sys;
 import re;
 import from time { sleep }
 import from concurrent.futures { Future }
-import from byllm.lib { RateLimitError }
 import from llm_switch { is_mock }
 import from gm_types { Hazard, Lang, Complaint, ParsedText, Event, fix_parsed }
 import from grid { GridNode, Substation, Section, Home, Landmark, Feeds, Located, ParseCache, EventLog, children, parents }
@@ -145,6 +144,7 @@ def _cache -> ParseCache;
 def _cache_key(text: str) -> str;
 def _apply(c: Complaint, p: ParsedText);
 def _fallback(index: int) -> ParsedText;
+def _is_rate_limit(e: Exception) -> bool;
 def _call_batch(texts: list[str]) -> list[LlmParsed];
 def _call_single(raw: str) -> LlmParsed | None;
 def _launch(texts: list[str]) -> Future;

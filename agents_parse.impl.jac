@@ -45,6 +45,12 @@ def _inc_bd_skips {
     if m { m.BD_SKIPS += 1; }
 }
 
+# Rate-limit check by class name: byllm is not importable on every Jac line
+# (Jac Hammer bundles it), so we don't import byllm.lib.RateLimitError.
+impl _is_rate_limit(e: Exception) -> bool {
+    return "RateLimit" in type(e).__name__;
+}
+
 # One LLM batch call. Retries once on a rate limit; after that (or any other
 # error) returns [] and the caller falls back. The storm must never crash.
 impl _call_batch(texts: list[str]) -> list[LlmParsed] {
@@ -52,13 +58,15 @@ impl _call_batch(texts: list[str]) -> list[LlmParsed] {
         try {
             _inc_llm_calls();
             return parse_texts(texts);
-        } except RateLimitError {
-            if attempt == 0 {
-                sleep(RETRY_WAIT_S);
-            }
         } except Exception as e {
-            print(f"[agents_parse] batch parse failed: {str(e)}");
-            return [];
+            if _is_rate_limit(e) {
+                if attempt == 0 {
+                    sleep(RETRY_WAIT_S);
+                }
+            } else {
+                print(f"[agents_parse] batch parse failed: {str(e)}");
+                return [];
+            }
         }
     }
     return [];
@@ -69,13 +77,15 @@ impl _call_single(raw: str) -> LlmParsed | None {
         try {
             _inc_llm_calls();
             return parse_single(raw);
-        } except RateLimitError {
-            if attempt == 0 {
-                sleep(RETRY_WAIT_S);
-            }
         } except Exception as e {
-            print(f"[agents_parse] single parse failed: {str(e)}");
-            return None;
+            if _is_rate_limit(e) {
+                if attempt == 0 {
+                    sleep(RETRY_WAIT_S);
+                }
+            } else {
+                print(f"[agents_parse] single parse failed: {str(e)}");
+                return None;
+            }
         }
     }
     return None;
