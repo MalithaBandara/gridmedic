@@ -3,6 +3,8 @@
 start_storm -> reset, apply ground truth, load the scenario complaints.
   scenario "storm" (default): the F1-F4 storm. "blackout": transmission line
   TL1 into SS1 trips and every feeder goes dark (scenario_blackout.jac).
+  "island": the national grid collapses; the same dark grid, with an
+  island-wide multilingual complaint flood (scenario_island.jac).
 tick(minutes), in order:
   1. advance the clock          2. release due complaints
   3. parse_batch (LLM, cached)  4. Localiser per non-duplicate complaint
@@ -67,6 +69,7 @@ import from grid {
 import from grid_build { build_grid, reset_grid }
 import from grid_storm { generate_complaints, apply_storm_truth, f5_followup_complaints }
 import from scenario_blackout { blackout_complaints, apply_blackout_truth, BLACKOUT_LENGTH_MIN }
+import from scenario_island { island_complaints, ISLAND_LENGTH_MIN }
 import from agents_parse { parse_batch, parse_one, flag_duplicates }
 import from agents_group { localise_all, group_faults, build_index, section_for_landmark }
 import from agents_explain { explain_fault, fault_key, fallback_explanation }

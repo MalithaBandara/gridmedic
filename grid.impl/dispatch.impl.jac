@@ -73,14 +73,27 @@ impl Dispatcher.run {
         c = cn.crew;
         if c.status == CrewStatus.TRAVELLING {
             # Recall a crew whose fault was dropped or closed on the way, e.g.
-            # an early fuse guess that a transmission fault then explained.
+            # an early fuse guess that a transmission fault then explained, or
+            # whose fault became that transmission fault (regrouping keeps the
+            # fault's id and crew): no distribution crew can fix it.
             open_task = [fn for fn in fault_nodes if fn.fault.id == c.task_fault_id and fn.fault.status not in [FaultStatus.RESTORED, FaultStatus.CLOSED]];
-            if not open_task {
+            upstream_task = [fn for fn in open_task if fn.fault.kind == FaultKind.TRANSMISSION];
+            for fn in upstream_task {
+                f = fn.fault;
+                f.crew_id = "";
+                f.eta_min = 0;
+                if f.status == FaultStatus.CREW_ASSIGNED {
+                    f.status = FaultStatus.SUSPECTED;
+                }
+                fn.fault = label_fault(f);
+            }
+            if not open_task or upstream_task {
+                why: str = "its fault is upstream of the substation" if upstream_task else f"{c.task_fault_id} is no longer an open fault";
                 if elog {
                     elog.events.append(Event(
                         time_min=self.clock_min,
                         kind="crew_recalled",
-                        text=f"{c.name or c.id} recalled: {c.task_fault_id} is no longer an open fault",
+                        text=f"{c.name or c.id} recalled: {why}",
                         fault_id=c.task_fault_id
                     ));
                 }
