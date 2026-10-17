@@ -61,6 +61,12 @@ import from agents_parse { parse_batch, parse_one, flag_duplicates }
 import from agents_group { localise_all, group_faults }
 import from agents_priority { rank_fault_nodes, is_finished }
 
+import threading;
+
+# One lock for every endpoint that writes the graph: two tabs (or React
+# StrictMode double effects) must not build the grid or tick concurrently.
+glob LOCK = threading.RLock();
+
 glob STORM_SEED: int = 17;
 glob STORM_LENGTH_MIN: float = 20.0;
 

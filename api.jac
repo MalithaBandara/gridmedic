@@ -29,7 +29,9 @@ walker:pub get_grid {
     has reports: list[GridView] = [];
 
     can run with Root entry {
-        report sim.grid_view();
+        with sim.LOCK {
+            report sim.grid_view();
+        }
     }
 }
 
@@ -39,7 +41,9 @@ walker:pub start_storm {
         reports: list[Ack] = [];
 
     can run with Root entry {
-        report sim.storm_start(self.speed);
+        with sim.LOCK {
+            report sim.storm_start(self.speed);
+        }
     }
 }
 
@@ -50,7 +54,9 @@ walker:pub tick {
         reports: list[Ack] = [];
 
     can run with Root entry {
-        report sim.storm_tick(self.minutes);
+        with sim.LOCK {
+            report sim.storm_tick(self.minutes);
+        }
     }
 }
 
@@ -61,7 +67,9 @@ walker:pub submit_complaint {
         reports: list[Complaint] = [];
 
     can run with Root entry {
-        report sim.submit(self.text, self.consumer_no);
+        with sim.LOCK {
+            report sim.submit(self.text, self.consumer_no);
+        }
     }
 }
 
@@ -145,7 +153,9 @@ walker:pub apply_action {
         reports: list[ActionResult] = [];
 
     can run with Root entry {
-        report sim.apply(self.action_id);
+        with sim.LOCK {
+            report sim.apply(self.action_id);
+        }
     }
 }
 
@@ -167,7 +177,9 @@ walker:pub get_status {
         reports: list[CustomerStatus] = [];
 
     can run with Root entry {
-        report sim.customer_status(self.consumer_no);
+        with sim.LOCK {
+            report sim.customer_status(self.consumer_no);
+        }
     }
 }
 
@@ -176,6 +188,8 @@ walker:pub reset {
     has reports: list[Ack] = [];
 
     can run with Root entry {
-        report sim.storm_reset();
+        with sim.LOCK {
+            report sim.storm_reset();
+        }
     }
 }

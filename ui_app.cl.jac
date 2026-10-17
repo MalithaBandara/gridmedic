@@ -1,6 +1,8 @@
 """GridMedic Operator Dashboard - Shell and UI Layout."""
 
 import from "@jac/runtime" { Link }
+import from react { useEffect }
+import from .components.GridMap { GridMap }
 sv import from api {
     get_grid,
     get_faults,
@@ -23,6 +25,10 @@ sv import from gm_types {
     ActionResult,
     Ack
 }
+
+# Auto-tick guard. Module state (not reactive), so the 1 s interval never
+# starts a tick while the previous one is still running.
+glob _poll: dict = {"busy": False};
 
 def:pub OperatorApp -> JsxElement {
     has grid: GridView | None = None,
@@ -51,6 +57,20 @@ def:pub OperatorApp -> JsxElement {
     async def handleTick -> None;
     async def handleSubmitCrewReport -> None;
     async def handleApplyAction(action_id: str) -> None;
+    async def pollTick -> None;
+
+    # While a storm runs, advance the simulated clock about once a second
+    # (0.5 sim-min x speed per tick). Restarts when running or speed changes.
+    useEffect(lambda {
+        timer: float = 0.0;
+        if running {
+            timer = setInterval(lambda { if not _poll["busy"] { pollTick(); } }, 1000) as float;
+        }
+        return lambda { if timer { clearInterval(timer); } };
+    }, [running, speed]);
+
+    hazard_faults: list[Fault] = [f for f in faults if f.hazard_label != "" and f.status_label != "Restored" and f.status_label != "Closed"];
+    selected_faults: list[Fault] = [f for f in faults if f.id == selected_fault_id];
 
     return
         <div
@@ -271,6 +291,7 @@ def:pub OperatorApp -> JsxElement {
                             <div
                                 style={{
                                     "padding": "0.4rem 0.8rem",
+                                    "display": "block" if len(hazard_faults) > 0 else "none",
                                     "backgroundColor": "rgba(220, 38, 38, 0.15)",
                                     "border": "1px solid #ef4444",
                                     "borderRadius": "6px",
@@ -278,67 +299,14 @@ def:pub OperatorApp -> JsxElement {
                                     "color": "#fca5a5"
                                 }}
                             >
-                                <strong>{"⚠️ HAZARD AT POLE 23 (F1-B)"}</strong>
-                                <div>{"Line down on road · Sparks reported · SW1 Lockout"}</div>
+                                <strong>{f"⚠️ HAZARD: {hazard_faults[0].hazard_label.upper()} AT {hazard_faults[0].device_id}" if len(hazard_faults) > 0 else ""}</strong>
+                                <div>{f"{hazard_faults[0].kind_label} · {hazard_faults[0].homes_affected} homes · {hazard_faults[0].status_label}" if len(hazard_faults) > 0 else ""}</div>
                             </div>
                         </div>
 
-                        {#* Schematic Visual representation *#}
-                        <div style={{"textAlign": "center", "padding": "2rem 0"}}>
-                            <svg width="100%" height="260" viewBox="0 0 900 260" style={{"display": "block", "margin": "0 auto"}}>
-                                {#* Substation SS1 *#}
-                                <rect x="30" y="90" width="90" height="70" rx="6" fill="#1e293b" stroke="#38bdf8" strokeWidth="2"/>
-                                <text x="75" y="125" fill="#f8fafc" fontSize="12" fontWeight="bold" textAnchor="middle">{"SS1"}</text>
-                                <text x="75" y="142" fill="#94a3b8" fontSize="9" textAnchor="middle">{"Substation"}</text>
-
-                                {#* Feeder 1 Line (North) *#}
-                                <line x1="120" y1="110" x2="260" y2="60" stroke="#10b981" strokeWidth="4"/>
-                                <line x1="260" y1="60" x2="350" y2="60" stroke="#ef4444" strokeWidth="4" strokeDasharray="6,3"/>
-                                <line x1="350" y1="60" x2="520" y2="60" stroke="#ef4444" strokeWidth="4"/>
-                                <line x1="520" y1="60" x2="700" y2="60" stroke="#64748b" strokeWidth="4"/>
-
-                                {#* Feeder 1 Nodes *#}
-                                <circle cx="260" cy="60" r="14" fill="#1e293b" stroke="#10b981" strokeWidth="2"/>
-                                <text x="260" y="64" fill="#f8fafc" fontSize="10" textAnchor="middle">{"F1-A"}</text>
-
-                                <rect x="335" y="48" width="30" height="24" rx="4" fill="#ef4444" stroke="#fca5a5"/>
-                                <text x="350" y="64" fill="#fff" fontSize="9" fontWeight="bold" textAnchor="middle">{"SW1"}</text>
-
-                                <circle cx="435" cy="60" r="14" fill="#450a0a" stroke="#ef4444" strokeWidth="2"/>
-                                <text x="435" y="64" fill="#fca5a5" fontSize="10" textAnchor="middle">{"F1-B"}</text>
-
-                                <rect x="505" y="48" width="30" height="24" rx="4" fill="#334155" stroke="#94a3b8"/>
-                                <text x="520" y="64" fill="#fff" fontSize="9" textAnchor="middle">{"SW2"}</text>
-
-                                <circle cx="610" cy="60" r="14" fill="#1e293b" stroke="#64748b" strokeWidth="2"/>
-                                <text x="610" y="64" fill="#94a3b8" fontSize="10" textAnchor="middle">{"F1-C"}</text>
-
-                                {#* Feeder 2 Line (South) *#}
-                                <line x1="120" y1="140" x2="260" y2="190" stroke="#10b981" strokeWidth="4"/>
-                                <line x1="260" y1="190" x2="435" y2="190" stroke="#10b981" strokeWidth="4"/>
-                                <line x1="435" y1="190" x2="610" y2="190" stroke="#10b981" strokeWidth="4"/>
-
-                                {#* Feeder 2 Nodes *#}
-                                <circle cx="260" cy="190" r="14" fill="#1e293b" stroke="#10b981" strokeWidth="2"/>
-                                <text x="260" y="194" fill="#f8fafc" fontSize="10" textAnchor="middle">{"F2-A"}</text>
-
-                                <rect x="335" y="178" width="30" height="24" rx="4" fill="#1e293b" stroke="#10b981"/>
-                                <text x="350" y="194" fill="#10b981" fontSize="9" textAnchor="middle">{"SW3"}</text>
-
-                                <circle cx="435" cy="190" r="14" fill="#1e293b" stroke="#10b981" strokeWidth="2"/>
-                                <text x="435" y="194" fill="#f8fafc" fontSize="10" textAnchor="middle">{"F2-B"}</text>
-
-                                {#* Tie Switch TS1 *#}
-                                <line x1="610" y1="60" x2="720" y2="125" stroke="#38bdf8" strokeWidth="2" strokeDasharray="4,4"/>
-                                <line x1="610" y1="190" x2="720" y2="125" stroke="#38bdf8" strokeWidth="2" strokeDasharray="4,4"/>
-                                <rect x="705" y="113" width="30" height="24" rx="4" fill="#0f172a" stroke="#38bdf8" strokeDasharray="3,2"/>
-                                <text x="720" y="129" fill="#38bdf8" fontSize="9" fontWeight="bold" textAnchor="middle">{"TS1"}</text>
-
-                                {#* Key Annotations *#}
-                                <text x="435" y="38" fill="#f87171" fontSize="11" fontWeight="bold" textAnchor="middle">{"⚠️ Pole 23 Down"}</text>
-                                <text x="260" y="222" fill="#94a3b8" fontSize="9" textAnchor="middle">{"T6 (Pump) / T7"}</text>
-                                <text x="435" y="222" fill="#94a3b8" fontSize="9" textAnchor="middle">{"T8 (Fuse) / T9 / T10"}</text>
-                            </svg>
+                        {#* Schematic Visual representation: live from get_grid *#}
+                        <div style={{"textAlign": "center", "padding": "0.5rem 0"}}>
+                            <GridMap grid={grid} />
                         </div>
 
                         {#* Feeder 2 Zone footer *#}
@@ -638,6 +606,19 @@ def:pub OperatorApp -> JsxElement {
                         <div style={{"fontSize": "0.75rem", "color": "#94a3b8"}}>
                             {f"Selected fault: {selected_fault_id if selected_fault_id != '' else 'None'}"}
                         </div>
+                        {for sf in selected_faults {
+                            <div key={sf.id} style={{"fontSize": "0.75rem", "color": "#cbd5e1", "marginTop": "0.25rem"}}>
+                                <div style={{"color": "#f8fafc", "fontWeight": "600"}}>
+                                    {f"{sf.kind_label} @ {sf.device_id} · {sf.homes_affected} homes · confidence {sf.confidence:.1f} · priority {sf.priority}"}
+                                </div>
+                                {sf.street and <div>{"Street: " + sf.street}</div>}
+                                {sf.change_note and <div style={{"color": "#fbbf24"}}>{"Updated by crew report: " + sf.change_note}</div>}
+                                {sf.explanation and <div style={{"fontStyle": "italic"}}>{sf.explanation}</div>}
+                                {for (k, ev) in enumerate(sf.evidence) {
+                                    <div key={str(k)}>{"• " + ev}</div>
+                                }}
+                            </div>
+                        }}
                     </div>
 
                     {#* Crew Report Input *#}

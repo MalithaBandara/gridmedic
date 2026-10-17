@@ -50,7 +50,7 @@ impl OperatorApp.handleReset -> None {
 
 impl OperatorApp.handleTick -> None {
     _ = root spawn tick(minutes=0.5 * speed);
-    loadInitial();
+    await loadInitial();
 }
 
 impl OperatorApp.handleSubmitCrewReport -> None {
@@ -68,4 +68,13 @@ impl OperatorApp.handleApplyAction(action_id: str) -> None {
         action_message = res.reports[0].message;
     }
     loadInitial();
+}
+
+impl OperatorApp.pollTick -> None {
+    _poll["busy"] = True;
+    try {
+        await handleTick();
+    } finally {
+        _poll["busy"] = False;
+    }
 }
