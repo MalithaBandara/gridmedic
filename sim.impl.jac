@@ -259,7 +259,11 @@ impl tasks -> list[CrewTask] {
 }
 
 impl actions -> list[Action] {
-    return list(action_store().actions);
+    store = action_store();
+    if not store.actions {
+        root spawn Restorer();
+    }
+    return list(store.actions);
 }
 
 # Applies a safe action's switching steps, then re-runs the Energiser.

@@ -50,6 +50,7 @@ import from grid {
     ActionStore,
     Energiser,
     Dispatcher,
+    Restorer,
     Snapshot,
     children,
     parents
