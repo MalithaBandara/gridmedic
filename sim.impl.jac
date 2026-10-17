@@ -112,10 +112,11 @@ impl _clear_storm {
 }
 
 # ---------------------------------------------------------------- pipeline
-impl storm_start(speed: int) -> Ack {
+impl storm_start(speed: int, f5: bool = False) -> Ack {
     ensure_grid();
     _clear_storm();
     st = sim_state();
+    st.f5_enabled = f5;
     apply_storm_truth(st.f5_enabled);
     st.running = True;
     st.speed = max(1, speed);

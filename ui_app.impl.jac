@@ -37,7 +37,7 @@ impl OperatorApp.loadInitial -> None {
 }
 
 impl OperatorApp.handleStartStorm -> None {
-    _ = root spawn start_storm(speed=speed);
+    _ = root spawn start_storm(speed=speed, f5=f5_on);
     running = True;
     loadInitial();
 }

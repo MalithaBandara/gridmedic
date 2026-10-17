@@ -210,3 +210,10 @@ test "explain on an unknown fault returns an empty fault" {
     _crew_fixture();
     assert explain("F99").id == "";
 }
+
+test "start_storm hides the T4 fuse only when f5 is asked for" {
+    storm_start(1, True);
+    assert sim_state().f5_enabled and not _node("T4").fuse_ok;
+    storm_start(1);
+    assert not sim_state().f5_enabled and _node("T4").fuse_ok;
+}

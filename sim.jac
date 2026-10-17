@@ -91,7 +91,7 @@ def log_event(kind: str, text: str, fault_id: str = "");
 def clock -> float;
 
 # ---------------------------------------------------------------- pipeline
-def storm_start(speed: int) -> Ack;
+def storm_start(speed: int, f5: bool = False) -> Ack;
 def storm_tick(minutes: float) -> Ack;
 def storm_reset -> Ack;
 def process_complaints(new_items: list[Complaint]) -> int;

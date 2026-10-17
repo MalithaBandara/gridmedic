@@ -44,6 +44,7 @@ def:pub OperatorApp -> JsxElement {
         speed: int = 1,
         running: bool = False,
         selected_fault_id: str = "",
+        f5_on: bool = False,
         why_text: str = "",
         selected_crew_id: str = "CREW-A",
         crew_report_text: str = "",
@@ -873,6 +874,16 @@ def:pub OperatorApp -> JsxElement {
                                 ]}
                             </div>
                         </div>
+
+                        {#* Optional hidden second fault (F5) *#}
+                        <label style={{"display": "flex", "alignItems": "center", "gap": "0.4rem", "fontSize": "0.75rem", "color": "#94a3b8", "margin": "0.5rem 0", "cursor": "pointer"}}>
+                            <input
+                                type="checkbox"
+                                checked={f5_on}
+                                onChange={lambda e: ChangeEvent { f5_on = e.target.checked; }}
+                            />
+                            {"Hide a second fault (T4 fuse) behind F1 for the verifier"}
+                        </label>
 
                         {#* Primary Action Buttons *#}
                         <div style={{"display": "flex", "gap": "0.5rem"}}>

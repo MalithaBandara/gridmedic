@@ -38,11 +38,12 @@ walker:pub get_grid {
 # Starts the storm; complaints are released by tick. reports[0]
 walker:pub start_storm {
     has speed: int = 1,
+        f5: bool = False,    # also hide a T4 fuse behind F1 (the verifier finds it after the repair)
         reports: list[Ack] = [];
 
     can run with Root entry {
         with sim.LOCK {
-            report sim.storm_start(self.speed);
+            report sim.storm_start(self.speed, self.f5);
         }
     }
 }

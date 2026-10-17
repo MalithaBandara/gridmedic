@@ -96,8 +96,7 @@ test "a transformer that already has an active fault is not reported twice" {
 
 test "full storm: after the F1 repair the T4 fuse appears and the crew-corrected faults stay" {
     _preload();
-    sim_state().f5_enabled = True;
-    storm_start(5);
+    storm_start(5, True);
     for _ in range(42) {
         storm_tick(0.5);
     }
