@@ -2,9 +2,37 @@
 
 sv import from ..gm_types { Action }
 
+def _status_bg(safe: bool) -> str {
+    if safe {
+        return "#14532d";
+    }
+    return "#7f1d1d";
+}
+
+def _status_color(safe: bool) -> str {
+    if safe {
+        return "#86efac";
+    }
+    return "#fca5a5";
+}
+
+def _status_border(safe: bool) -> str {
+    if safe {
+        return "1px solid #10b981";
+    }
+    return "1px solid #ef4444";
+}
+
+def _status_text(safe: bool) -> str {
+    if safe {
+        return "SAFE";
+    }
+    return "BLOCKED";
+}
+
 def:pub ActionsPanel(
     actions: list[Action],
-    onApply: (str) -> None
+    onApply: any
 ) -> JsxElement {
     return
         <div
@@ -24,35 +52,35 @@ def:pub ActionsPanel(
                 </span>
             </div>
             <div style={{"display": "flex", "flexDirection": "column", "gap": "0.5rem"}}>
-                {[
+                {for a in actions {
                     <div
                         key={a.id}
                         style={{
                             "padding": "0.5rem 0.65rem",
                             "borderRadius": "6px",
                             "backgroundColor": "#0f172a",
-                            "border": "1px solid " + ("#10b981" if a.safe else "#ef4444")
+                            "border": _status_border(a.safe)
                         }}
                     >
                         <div style={{"display": "flex", "justifyContent": "space-between", "alignItems": "center"}}>
                             <span style={{"fontWeight": "700", "fontSize": "0.8rem", "color": "#f8fafc"}}>
-                                {f"{a.id} ({a.homes_restored} consumers)"}
+                                {a.id + " (" + str(a.homes_restored) + " consumers)"}
                             </span>
                             <span
                                 style={{
                                     "fontSize": "0.7rem",
                                     "padding": "0.1rem 0.35rem",
                                     "borderRadius": "3px",
-                                    "backgroundColor": ("#14532d" if a.safe else "#7f1d1d"),
-                                    "color": ("#86efac" if a.safe else "#fca5a5"),
+                                    "backgroundColor": _status_bg(a.safe),
+                                    "color": _status_color(a.safe),
                                     "fontWeight": "bold"
                                 }}
                             >
-                                {("SAFE" if a.safe else "BLOCKED")}
+                                {_status_text(a.safe)}
                             </span>
                         </div>
                         <div style={{"fontSize": "0.75rem", "color": "#94a3b8", "marginTop": "0.25rem"}}>
-                            {(a.reason if not a.safe else "Isolates fault, Feeder 2 capacity load 360 <= 700")}
+                            {a.reason}
                         </div>
                         {a.safe and (
                             <button
@@ -62,22 +90,20 @@ def:pub ActionsPanel(
                                     "marginTop": "0.45rem",
                                     "width": "100%",
                                     "padding": "0.35rem",
-                                    "backgroundColor": ("#15803d" if not a.applied else "#334155"),
+                                    "backgroundColor": "#15803d",
                                     "color": "white",
                                     "border": "none",
                                     "borderRadius": "4px",
                                     "fontSize": "0.75rem",
                                     "fontWeight": "600",
-                                    "cursor": ("pointer" if not a.applied else "default")
+                                    "cursor": "pointer"
                                 }}
-                                disabled={a.applied}
                             >
-                                {("Applied ✓" if a.applied else "Apply Restoration")}
+                                {"Apply Restoration"}
                             </button>
                         )}
                     </div>
-                    for a in actions
-                ]}
+                }}
             </div>
         </div>;
 }
