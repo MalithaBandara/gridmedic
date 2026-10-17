@@ -110,8 +110,12 @@ def:pub GridMap(grid: GridView | None) -> JsxElement {
                         <rect x={n.x - 30} y={n.y - 12} width="60" height="24" rx="4" fill="#1e293b" stroke="#64748b"/>
                         <text x={n.x} y={n.y + 3} fill="#cbd5e1" fontSize="7" textAnchor="middle">{n.label}</text>
                     </g>
-                } elif n.kind == "landmark" and n.status != "normal" {
-                    <text key={n.id} x={n.x} y={n.y - 18} fill={FAULT} fontSize="11" fontWeight="bold" textAnchor="middle">{"⚠ " + n.label}</text>
+                } elif n.kind == "landmark" and n.id.startswith("POLE") {
+                    if n.status != "normal" {
+                        <text key={n.id} x={n.x} y={n.y - 18} fill={FAULT} fontSize="11" fontWeight="bold" textAnchor="middle">{"⚠ " + n.label}</text>
+                    }
+                } elif n.kind == "landmark" {
+                    <text key={n.id} x={n.x} y={n.y} fill={SUSPECT if n.status != "normal" else "#64748b"} fontSize="7" textAnchor="middle">{"★ " + n.label}</text>
                 }
             }}
 

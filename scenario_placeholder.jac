@@ -1,9 +1,9 @@
-"""PLACEHOLDER demo grid and storm, so the app runs end to end today.
+"""PLACEHOLDER storm, so the app runs end to end until WP-A2 lands.
 
-Person A's grid_build.jac (WP-A1) and grid_storm.jac (WP-A2) replace this
-file: when they land, change the two `import from scenario_placeholder`
-lines in sim.jac to `grid_build` / `grid_storm` and delete this file.
-Same signatures as the real modules (see PLAN.md WP-A1 / WP-A2).
+Person A's grid_storm.jac (WP-A2) replaces this file: when it lands, change
+the `import from scenario_placeholder` line in sim.jac to `grid_storm` and
+delete this file. Same signatures as WP-A2 (see PLAN.md). The grid itself
+now comes from grid_build.jac (WP-A1).
 
 The storm here is a small, BD-SMS-heavy subset of CLAUDE.md §6.2-6.3:
 F1 line down (T3, T4, T5), F2 T8 fuse, F3 T6 fuse, F4 Lake Road under T9,
@@ -11,46 +11,11 @@ F1 line down (T3, T4, T5), F2 T8 fuse, F3 T6 fuse, F4 Lake Road under T9,
 """
 
 import from random { Random }
-import from gm_types { Crew, CrewStatus, Complaint }
-import from grid {
-    GridNode,
-    Feeds,
-    Located,
-    Substation,
-    Section,
-    Switch,
-    Transformer,
-    Home,
-    Depot,
-    Landmark,
-    CrewNode,
-    SimState,
-    ParseCache,
-    children
-}
-
-glob _TXS: list[tuple[str, str, int, int, int, list[str]]] = [
-    ("T1", "F1-A", 320, 90, 60, []),
-    ("T2", "F1-A", 380, 90, 45, []),
-    ("T3", "F1-B", 520, 90, 80, ["HOSPITAL"]),
-    ("T4", "F1-B", 580, 90, 55, []),
-    ("T5", "F1-C", 750, 90, 70, []),
-    ("T6", "F2-A", 320, 520, 50, ["WATER_PUMP"]),
-    ("T7", "F2-A", 380, 520, 65, []),
-    ("T8", "F2-B", 620, 520, 40, []),
-    ("T9", "F2-B", 680, 520, 75, []),
-    ("T10", "F2-B", 740, 520, 60, [])
-];
+import from gm_types { Complaint }
+import from grid { GridNode, Substation, Section, Switch, Transformer, children }
 
 def consumer_no(tx: str, i: int) -> str {
     return "451" + str(20 + int(tx[1:])) + f"{i:05d}";
-}
-
-def _street(tx: str, i: int) -> str {
-    if tx == "T9" {
-        return "Lake Road" if i <= 15 else ("Temple Road" if i <= 45 else "Station Road");
-    }
-    return f"{tx} Lane " + ("A" if i % 2 == 0 else "B");
 }
 
 def _all_nodes -> list[GridNode] {
@@ -69,102 +34,6 @@ def _all_nodes -> list[GridNode] {
     return out;
 }
 
-def build_grid -> Substation {
-    subs = [root -->[?:Substation]];
-    if subs {
-        return subs[0];
-    }
-    ss = Substation(id="SS1", name="Moratuwa Grid Substation", x=200, y=300);
-    root ++> ss;
-    nodes: dict[str, GridNode] = {"SS1": ss};
-    for (sid, feeder, x, y) in [("F1-A", "F1", 350, 150), ("F1-B", "F1", 550, 150), ("F1-C", "F1", 750, 150), ("F2-A", "F2", 350, 450), ("F2-B", "F2", 650, 450)] {
-        nodes[sid] = Section(id=sid, feeder=feeder, x=x, y=y);
-    }
-    nodes["SW1"] = Switch(id="SW1", kind="recloser", x=450, y=150);
-    nodes["SW2"] = Switch(id="SW2", x=650, y=150);
-    nodes["SW3"] = Switch(id="SW3", x=500, y=450);
-    nodes["TS1"] = Switch(id="TS1", kind="tie", closed=False, normally_open=True, x=800, y=300);
-    for (a, b, cap) in [("SS1", "F1-A", 700), ("F1-A", "SW1", 0), ("SW1", "F1-B", 0), ("F1-B", "SW2", 0), ("SW2", "F1-C", 0), ("SS1", "F2-A", 700), ("F2-A", "SW3", 0), ("SW3", "F2-B", 0), ("F1-C", "TS1", 0), ("F2-B", "TS1", 0)] {
-        nodes[a] +>:Feeds(capacity=cap):+> nodes[b];
-    }
-    for (tid, sid, x, y, homes, crit) in _TXS {
-        t = Transformer(id=tid, feeder=sid[:2], x=x, y=y, homes=homes, critical=crit);
-        nodes[sid] +>:Feeds:+> t;
-        streets: dict[str, bool] = {};
-        above: bool = y < 300;
-        for i in range(1, homes + 1) {
-            st: str = _street(tid, i);
-            streets[st] = True;
-            col: int = (i - 1) % 10;
-            row: int = (i - 1) // 10;
-            hx: int = x - 18 + col * 4;
-            hy: int = (y - 18 - row * 4) if above else (y + 18 + row * 4);
-            t +>:Feeds:+> Home(id=f"H-{tid}-{i:03d}", consumer_no=consumer_no(tid, i), street=st, transformer_id=tid, x=hx, y=hy);
-        }
-        t.service_ok = streets;
-    }
-    depots: dict[str, Depot] = {};
-    for (did, x, y) in [("CSC-North", 80, 150), ("CSC-South", 80, 450)] {
-        d = Depot(id=did, name=did, x=x, y=y);
-        root ++> d;
-        depots[did] = d;
-    }
-    for (cid, dep) in [("CREW-A", "CSC-North"), ("CREW-B", "CSC-North"), ("CREW-C", "CSC-South")] {
-        d = depots[dep];
-        cn = CrewNode(crew=Crew(id=cid, name="Crew " + cid[-1], depot_id=dep, location_id=dep, status=CrewStatus.IDLE, x=d.x, y=d.y));
-        root ++> cn;
-        cn +>:Located:+> d;
-    }
-    lm = Landmark(id="POLE-23", name="Pole 23", section_id="F1-B", x=560, y=150);
-    root ++> lm;
-    lm +>:Located:+> nodes["F1-B"];
-    if not [root -->[?:SimState]] {
-        root ++> SimState();
-    }
-    if not [root -->[?:ParseCache]] {
-        root ++> ParseCache();
-    }
-    return ss;
-}
-
-def reset_grid {
-    for n in _all_nodes() {
-        n.energised = True;
-        if isinstance(n, Switch) {
-            n.closed = not n.normally_open;
-            n.locked_out = False;
-        } elif isinstance(n, Section) {
-            n.line_ok = True;
-            n.reports = 0;
-            n.work_zone = False;
-        } elif isinstance(n, Transformer) {
-            n.fuse_ok = True;
-            n.reports = 0;
-            ok: dict[str, bool] = {};
-            for k in n.service_ok.keys() {
-                ok[str(k)] = True;
-            }
-            n.service_ok = ok;
-        } elif isinstance(n, Home) {
-            n.has_power = True;
-            n.reported = False;
-        }
-    }
-    depots: dict[str, Depot] = {d.id: d for d in [root -->[?:Depot]]};
-    for cn in [root -->[?:CrewNode]] {
-        c = cn.crew;
-        d = depots.get(c.depot_id);
-        c.status = CrewStatus.IDLE;
-        c.location_id = c.depot_id;
-        c.task_fault_id = "";
-        c.eta_min = 0;
-        if d {
-            c.x = d.x;
-            c.y = d.y;
-        }
-        cn.crew = c;
-    }
-}
 
 def apply_storm_truth(f5: bool = False) {
     for n in _all_nodes() {
