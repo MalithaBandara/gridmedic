@@ -5,12 +5,13 @@ Spawn from the client on root and read `result.reports`:
   - list endpoints report one item per element (reports: list[T])
   - single-value endpoints report exactly one value (read reports[0])
 
-Bodies return mock data from api_mock.jac until WP-B4 swaps them for real ones.
+All logic lives in sim.jac; these walkers are the thin public surface.
 """
 
 import from gm_types {
     Complaint,
     Fault,
+    FaultKind,
     Crew,
     CrewTask,
     Action,
@@ -18,29 +19,19 @@ import from gm_types {
     Event,
     GridView,
     Ack,
-    ActionResult
+    ActionResult,
+    label_fault
 }
-import from api_mock {
-    mock_grid,
-    mock_faults,
-    mock_crews,
-    mock_tasks,
-    mock_complaints,
-    mock_events,
-    mock_actions,
-    mock_status,
-    mock_ack,
-    mock_crew_report,
-    mock_apply,
-    mock_submit
-}
+import sim;
 
 # Nodes, edges, clock and counters for the diagram. reports[0]
 walker:pub get_grid {
     has reports: list[GridView] = [];
 
     can run with Root entry {
-        report mock_grid();
+        with sim.LOCK {
+            report sim.grid_view();
+        }
     }
 }
 
@@ -50,7 +41,9 @@ walker:pub start_storm {
         reports: list[Ack] = [];
 
     can run with Root entry {
-        report mock_ack(f"Storm started at {self.speed}x");
+        with sim.LOCK {
+            report sim.storm_start(self.speed);
+        }
     }
 }
 
@@ -61,7 +54,9 @@ walker:pub tick {
         reports: list[Ack] = [];
 
     can run with Root entry {
-        report mock_ack(f"Advanced {self.minutes} min");
+        with sim.LOCK {
+            report sim.storm_tick(self.minutes);
+        }
     }
 }
 
@@ -72,7 +67,9 @@ walker:pub submit_complaint {
         reports: list[Complaint] = [];
 
     can run with Root entry {
-        report mock_submit(self.text, self.consumer_no);
+        with sim.LOCK {
+            report sim.submit(self.text, self.consumer_no);
+        }
     }
 }
 
@@ -82,7 +79,7 @@ walker:pub get_complaints {
         reports: list[Complaint] = [];
 
     can run with Root entry {
-        for c in mock_complaints(self.since_min) {
+        for c in sim.complaints_since(self.since_min) {
             report c;
         }
     }
@@ -93,7 +90,7 @@ walker:pub get_faults {
     has reports: list[Fault] = [];
 
     can run with Root entry {
-        for f in mock_faults() {
+        for f in sim.ranked_faults() {
             report f;
         }
     }
@@ -104,7 +101,7 @@ walker:pub get_crews {
     has reports: list[Crew] = [];
 
     can run with Root entry {
-        for c in mock_crews() {
+        for c in sim.crews() {
             report c;
         }
     }
@@ -115,20 +112,27 @@ walker:pub get_tasks {
     has reports: list[CrewTask] = [];
 
     can run with Root entry {
-        for t in mock_tasks() {
+        for t in sim.tasks() {
             report t;
         }
     }
 }
 
 # A field crew's free-text report; returns the fault after the update. reports[0]
+# WP-B5 replaces this body with parse_crew_report + the CrewReport walker.
 walker:pub crew_report {
     has crew_id: str = "",
         text: str = "",
         reports: list[Fault] = [];
 
     can run with Root entry {
-        report mock_crew_report(self.crew_id);
+        f = sim.crew_fault(self.crew_id);
+        if f is None {
+            report label_fault(Fault(id="", kind=FaultKind.UNKNOWN, device_id="", homes_affected=0, change_note=f"{self.crew_id} has no assigned fault"));
+        } else {
+            sim.log_event("crew_report", f"{self.crew_id}: {self.text}", f.id);
+            report f;
+        }
     }
 }
 
@@ -137,7 +141,7 @@ walker:pub get_actions {
     has reports: list[Action] = [];
 
     can run with Root entry {
-        for a in mock_actions() {
+        for a in sim.actions() {
             report a;
         }
     }
@@ -149,7 +153,9 @@ walker:pub apply_action {
         reports: list[ActionResult] = [];
 
     can run with Root entry {
-        report mock_apply(self.action_id);
+        with sim.LOCK {
+            report sim.apply(self.action_id);
+        }
     }
 }
 
@@ -159,19 +165,21 @@ walker:pub get_events {
         reports: list[Event] = [];
 
     can run with Root entry {
-        for e in mock_events(self.since_min) {
+        for e in sim.events_since(self.since_min) {
             report e;
         }
     }
 }
 
-# Customer page status lookup. reports[0]
+# Customer page status lookup. Logs a status_checked event (a writer). reports[0]
 walker:pub get_status {
     has consumer_no: str = "",
         reports: list[CustomerStatus] = [];
 
     can run with Root entry {
-        report mock_status(self.consumer_no);
+        with sim.LOCK {
+            report sim.customer_status(self.consumer_no);
+        }
     }
 }
 
@@ -180,6 +188,8 @@ walker:pub reset {
     has reports: list[Ack] = [];
 
     can run with Root entry {
-        report mock_ack("Reset to normal grid");
+        with sim.LOCK {
+            report sim.storm_reset();
+        }
     }
 }
