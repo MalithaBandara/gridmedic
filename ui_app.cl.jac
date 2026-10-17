@@ -3,6 +3,7 @@
 import from "@jac/runtime" { Link }
 import from react { useEffect }
 import from .components.GridMap { GridMap }
+import from .components.CrewPanel { CrewPanel }
 sv import from api {
     get_grid,
     get_faults,
@@ -467,59 +468,8 @@ def:pub OperatorApp -> JsxElement {
                         </div>
                     </div>
 
-                    {#* 2. Crew Tasks Panel *#}
-                    <div
-                        style={{
-                            "backgroundColor": "#1e293b",
-                            "borderRadius": "8px",
-                            "padding": "0.85rem",
-                            "border": "1px solid #334155"
-                        }}
-                    >
-                        <h3 style={{"margin": "0 0 0.5rem 0", "fontSize": "0.95rem", "color": "#f8fafc"}}>
-                            {"Field Crews & Dispatch"}
-                        </h3>
-                        <div style={{"display": "flex", "flexDirection": "column", "gap": "0.4rem"}}>
-                            {[
-                                <div
-                                    key={c.id}
-                                    style={{
-                                        "display": "flex",
-                                        "justifyContent": "space-between",
-                                        "alignItems": "center",
-                                        "padding": "0.4rem 0.6rem",
-                                        "backgroundColor": "#0f172a",
-                                        "borderRadius": "6px",
-                                        "fontSize": "0.8rem"
-                                    }}
-                                >
-                                    <div>
-                                        <span style={{"fontWeight": "700", "color": "#e2e8f0"}}>{c.name}</span>
-                                        <span style={{"color": "#94a3b8", "marginLeft": "0.4rem"}}>
-                                            {f"({c.depot_id})"}
-                                        </span>
-                                    </div>
-                                    <div style={{"display": "flex", "alignItems": "center", "gap": "0.4rem"}}>
-                                        <span style={{"color": "#38bdf8", "fontSize": "0.75rem"}}>
-                                            {c.task_fault_id}
-                                        </span>
-                                        <span
-                                            style={{
-                                                "fontSize": "0.7rem",
-                                                "padding": "0.15rem 0.35rem",
-                                                "borderRadius": "3px",
-                                                "backgroundColor": "#1e3a8a" if c.status_label == "Travelling" else "#14532d",
-                                                "color": "white"
-                                            }}
-                                        >
-                                            {c.status_label}
-                                        </span>
-                                    </div>
-                                </div>
-                                for c in crews
-                            ]}
-                        </div>
-                    </div>
+                    {#* 2. Crew Tasks Panel (WP-C4) *#}
+                    <CrewPanel crews={crews} />
 
                     {#* 3. Restoration Plans & Safety Check *#}
                     <div
