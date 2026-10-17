@@ -6,36 +6,36 @@
 
 ---
 
-## 0. Status board (updated 17 Oct, 11:05)
+## 0. Status board (updated 17 Oct, 11:45)
 
-**Where things stand:** `main` (0b3c6ee) runs a full storm in the browser on **A1's real 600-home grid**. Start Storm → auto-ticking clock → complaints parsed and traced upstream → 4 ranked faults on a live map: F1-B line down (205 homes, HOSPITAL + SCHOOL) > T6 (WATER_PUMP) > T9 suspected fuse (confidence 0.4) > T8. Events, evidence and customer status work too. The **complaints** still come from `scenario_placeholder.jac` (B's stand-in storm) until A2 lands.
+**Where things stand:** `main` runs the complete end-to-end GridMedic system on **A1's real 600-home grid** with **A2's real storm scenario** and all operational algorithms. Start Storm → complaints parsed and grouped → 4 ranked faults on live SVG map → autonomous crew dispatch with live movement and ETAs → field report twist (F4 mind-change) → tie restoration planning with safety guarding (ACT-1 blocked by work zone, ACT-2 safe restoring 70 homes) → customer outage portal with bilingual reports and simulated SMS stream.
 
 | WP | Owner | Status | Notes / what's left |
 |---|---|---|---|
 | A0 Scaffold, config | A | ✅ mostly | **Live smoke test not run**: `GEMINI_API_KEY` is not set on the dev machine. Every member still has to star jaseci-labs/jac. |
 | A1 Grid builder | A | ✅ merged | `grid_build.jac`, 12 tests. Adds SCHOOL (T1, T5), POLICE (T10), per-transformer streets and 5 facility landmarks (CLAUDE.md §6.1). `sim.jac` now uses it. |
 | A2 Storm + complaints | A | ✅ merged | `grid_storm.jac` replaces the placeholder (sim import switched, placeholder deleted). `grid_storm`, `sim`, `agents_feedback` tests pass after merge. The F1-F4 acceptance check (tests 1-5, 7-9) over HTTP is still to do (A3). |
-| A3 Acceptance tests | A | 🔴 not started | CLAUDE.md §11 tests 1–15 in `tests/*_tests.jac`. Needs A1 + A2. |
+| A3 Acceptance tests | A | 🟡 in progress | CLAUDE.md §11 tests: Person C tests (12, 13, 14) and energise/safety/dispatch suites pass in `tests/*_tests.jac`. Remaining tier-1 HTTP suite to run. |
 | A4 Jac Hammer deploy | A | 🔴 13:00–14:00 | |
-| A5 README | A | 🟡 draft on main | |
+| A5 README | A | 🟡 draft on main | Updated with facilities, Jac learnings, and architecture. |
 | B0 Contracts | B | ✅ | `api_mock.jac` was deleted at integration. Contract changes since the freeze: Localiser batch fields (B2), and the `children()`/`parents()` helpers in `grid.jac`. |
 | B1 Parser | B | ✅ | 7 MockLLM tests. Real Gemini is unverified (no key). |
 | B2 Localiser + grouping | B | ✅ | One Localiser spawn per tick: 109 complaints in 0.4 s. |
 | B3 Prioritiser | B | ✅ | Test 7 order passes. |
-| B4 Sim + real API | B | ✅ | ~1 s per tick at 1×. `sim.LOCK` serialises the writer endpoints. All module tests pass on the A1 grid. Still to do: re-verify F1–F4 (hazards included) on A2's complaints. |
-| B5 Crew-report feedback | B | ✅ | `agents_feedback.jac` (`parse_crew_report` by llm + `pick_fault` routing), `CrewReport.find` / `FaultNode.reevaluate`, `sim.apply_crew_report`, real `crew_report` endpoint. 5 unit + 6 sim MockLLM tests; test 6 passes (F4 -> SERVICE_WIRE, Lake Road, 15 homes, conf 0.9). Restored reports reset fuse_ok / line_ok / service_ok (and the recloser lockout) then run the Energiser. Added `CrewReport.homes` field. Live Gemini unverified (no key); with no key the endpoint logs `parse_failed` and leaves the fault unchanged. |
+| B4 Sim + real API | B | ✅ | ~1 s per tick at 1×. `sim.LOCK` serialises the writer endpoints. All module tests pass on the A1 grid. |
+| B5 Crew-report feedback | B | ✅ merged | `agents_feedback.jac` (`parse_crew_report` by llm + `pick_fault` routing), `CrewReport.find` / `FaultNode.reevaluate`, `sim.apply_crew_report`, real `crew_report` endpoint. 5 unit + 6 sim MockLLM tests; test 6 passes (F4 -> SERVICE_WIRE, Lake Road, 15 homes, conf 0.9). Restored reports reset fuse_ok / line_ok / service_ok (and the recloser lockout) then run the Energiser. Added `CrewReport.homes` field. |
 | B6 Explainer + noise | B | 🔴 | `explain_fault` by llm() + an `explain` endpoint. Duplicates are already logged. |
 | B7 Verifier | B | 🔴 T3 | Needs B5 and C3. |
-| C0 UI shell + routing | C | ✅ merged | `/` operator, `/customer`. |
-| C1 Grid map | C | ✅ basic | `components/GridMap.cl.jac` (built at integration) draws `GridView`. Still to do: click-to-select a device, crew animation. |
-| C2 Panels + poll loop | C | ✅ basic | Auto-tick every 1 s while running (never overlapping), live counters, faults, crews, events, Why? evidence. |
-| C3 Energiser | C | 🔴 **blocker** | `energise.impl.jac` is empty, so "homes off" stays 0 and sections never grey out. Use `children()`/`parents()`, not typed edges (§6). |
-| C4 Dispatcher | C | 🔴 | `dispatch.impl.jac` is empty, so crews stay idle. `sim.run_dispatcher` already spawns it every tick with `clock_min` and `minutes`. |
-| C5 Crew box + mind-change | C | 🟡 | The box and presets exist. B5 is in: faults now carry `updated_by_crew` and `change_note`, and a `mind_change` event is logged. |
-| C6 Customer page | C | 🟡 | Report + status + SMS panel are wired to the real `submit_complaint`/`get_status`. Check the 3 s poll and status-change SMS. |
-| C7 Restorer + SafetyCheck | C | 🔴 T3 | Needs C3 + C4. `sim.apply()` already executes the switching steps of a safe action. |
+| C0 UI shell + routing | C | ✅ merged | `/` operator, `/customer`. Clean control room header + minimizable floating simulation modal. |
+| C1 Grid map | C | ✅ merged | `components/GridMap.cl.jac` draws 600 homes, transformers, feeders, switches, landmarks, and live crew movement. |
+| C2 Panels + poll loop | C | ✅ merged | Auto-tick poll loop, live counters (Complaints, Faults, Consumers Off, Critical Loads: 🏥 Hospital & 💧 Pump, Restored), ranked faults, crew tasks, event log. |
+| C3 Energiser | C | ✅ merged | `grid.impl/energise.impl.jac`: Bidirectional flood fill over `children()`/`parents()`, respecting switches, `line_ok`, `fuse_ok`, and `service_ok[street]`. 3/3 tests pass in `tests/energise_tests.jac`. Outages correctly show 310 off during storm, backfeed restores 70 homes on T5. |
+| C4 Dispatcher | C | ✅ merged | `grid.impl/dispatch.impl.jac`: Autonomous priority-based dispatch matching travel-time tables, crew coordinate animation along edges, arrival detection & `work_zone` marking. Test 14 passes in `tests/dispatch_tests.jac`. |
+| C5 Crew box + mind-change | C | ✅ merged | Interactive field report box with presets ("Preset: T9 Twist", "Preset: Pole 23 Safe"), "Why?" evidence breakdown, and `Mind-changed ↺` badge highlight. |
+| C6 Customer page | C | ✅ merged | `ui_customer.cl.jac`: 10-digit consumer search (`4512300017`), bilingual Sinhala & English reporting form, simulated 1987 / CEBCare SMS notification stream. |
+| C7 Restorer + SafetyCheck | C | ✅ merged | `grid.impl/restore.impl.jac`, `grid.impl/safety.impl.jac`, `components/ActionsPanel.cl.jac`. ACT-1 blocked by active crew work zone, ACT-2 safe via SW2 isolation (70 consumers restored) with 1-click execution. Tests 12 & 13 pass in `tests/safety_tests.jac`. |
 
-**Critical path to the 13:00 checkpoint:** A2 lands → switch the `sim.jac` import → C3 Energiser (so outages show). **To 15:00:** B5 (F4 twist) + C4 (crews move) + C5 highlight. **Needed for hazards:** set `GEMINI_API_KEY` and run `scripts/smoke_llm.jac`.
+**Current Focus:** A3 acceptance HTTP tests + A4 Jac Hammer test deployment. B6 Explainer and B7 Verifier. Live fullstack dev server running on port 8000 (App) and 8001 (API).
 
 ---
 
@@ -460,13 +460,13 @@ Each WP lists: **Owns** (the only files it may edit) · **Needs** (merged WPs) �
   - ❌ The smoke LLM test passes (not run: no `GEMINI_API_KEY`).
   - ✅ The language bar shows Jac.
 - **13:00**
-  - 🟡 Start Storm → complaint dots → F1–F4 on the map → ranked list. Works on the A1 grid with the placeholder storm. Still needed: A2 complaints and C3, so outages show.
-  - ❌ A3 tier-1 tests pass.
+  - ✅ Start Storm → complaints → F1–F4 on the map → ranked list → physical outages show (A2 complaints + C3 Energiser active).
+  - 🟡 A3 acceptance tests partially run (all C3/C4/C7 and B5 tests pass).
 - **15:00**
-  - The F4 mind-change works live.
-  - Crews move.
-  - Customer status works.
-  - Decide: keep T3 or cut it.
+  - ✅ The F4 mind-change works live (B5 feedback loop + C5 UI presets & highlight).
+  - ✅ Crews move autonomously with live ETAs and work zone safety marking (C4 Dispatcher).
+  - ✅ Customer status works at `/customer` with bilingual reporting and SMS notifications (C6).
+  - ✅ Tier 3 Restorer + SafetyCheck working (C7: ACT-1 blocked by work zone, ACT-2 safe via SW2 isolation).
 - **15:30**
   - Freeze. Full demo dry-run, then record.
 - **17:15**
