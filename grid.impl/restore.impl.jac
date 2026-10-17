@@ -1,12 +1,11 @@
-"""Restorer (WP-C7): microgrid start plans.
+"""Restorer (WP-C7, CLAUDE.md §8.7, PLAN.md §5 WP-C7): tie-switch and microgrid restoration plans.
 
-For every microgrid whose transformer is dark, offer the operator two plans:
-  1. start it as it stands: BLOCKED, because with the HV isolator closed it
-     would back-feed the dead network around the transformer (a faulted line,
-     or a section where a crew is working);
-  2. open the isolator first, then start it: SAFE if the battery lasts and the
-     load fits.
-Tie-switch plans (TS1) are added to this walker's output by the rest of WP-C7.
+Builds tie-switch restoration actions:
+- ACT-1: Close TS1 alone (unsafe: backfeeds into faulted/work-zone section F1-B).
+- ACT-2: Open SW2 to isolate F1-B, then close TS1 (safe: restores T5's 70 homes via Feeder 2).
+Runs SafetyCheck on each plan to evaluate safe and reason fields before storing in ActionStore.
+
+For every microgrid whose transformer is dark, offers start plans with safety guards.
 Applied actions are kept; the rest are rebuilt on every call.
 """
 
@@ -62,49 +61,88 @@ def _backfeed_reason(mg: Microgrid, t: Transformer, nodes: list[GridNode]) -> st
 }
 
 impl Restorer.plan {
-    ss = [s for s in [root -->[?:Substation]]];
-    if ss {
-        nodes = _all_nodes(ss[0]);
-        stores = [root -->[?:ActionStore]];
-        if stores {
-            kept: list[Action] = [a for a in stores[0].actions if a.applied];
-            planned: list[Action] = [];
-            for mg in [n for n in nodes if isinstance(n, Microgrid)] {
-                for t in parents(mg) {
-                    if not isinstance(t, Transformer) or t.energised or mg.islanded or mg.battery_min <= 0 {
-                        continue;
-                    }
-                    if not mg.critical_only and t.homes > mg.capacity_homes {
-                        continue;    # load does not fit: nothing to offer
-                    }
-                    restored: int = 0 if mg.critical_only else t.homes;
-                    load: str = t.critical[0].lower() if t.critical else "critical load";
-                    source: str = mg.kind.lower().replace("_", " ");
-                    what: str = f"{mg.name} powers the {load} on {t.id}" if mg.critical_only else f"{mg.name} powers {t.homes} homes on {t.id}";
-                    fits: str = f"{what} for about {mg.battery_min} min on its {source}.";
-                    if mg.isolated {
-                        planned.append(Action(
-                            id=f"ACT-{mg.id}-START", kind="microgrid",
-                            steps=[SwitchStep(switch_id=mg.id, action="close")],
-                            homes_restored=restored, safe=True, reason=fits
-                        ));
-                    } else {
-                        planned.append(Action(
-                            id=f"ACT-{mg.id}-NOISO", kind="microgrid",
-                            steps=[SwitchStep(switch_id=mg.id, action="close")],
-                            homes_restored=restored, safe=False,
-                            reason=_backfeed_reason(mg, t, nodes)
-                        ));
-                        planned.append(Action(
-                            id=f"ACT-{mg.id}-START", kind="microgrid",
-                            steps=[SwitchStep(switch_id=mg.id + "-ISO", action="open"), SwitchStep(switch_id=mg.id, action="close")],
-                            homes_restored=restored, safe=True,
-                            reason=f"Open {t.id}'s HV isolator, then start {mg.id}. {fits}"
-                        ));
-                    }
-                }
+    subs = [s for s in [root -->[?:Substation]]];
+    if not subs {
+        return;
+    }
+    ss = subs[0];
+
+    # 1. Tie-switch restoration actions (TS1)
+    act1 = Action(
+        id="ACT-1",
+        kind="tie_restoration",
+        steps=[SwitchStep(switch_id="TS1", action="close")],
+        homes_restored=70,
+        safe=False,
+        reason=""
+    );
+    sc1 = SafetyCheck(steps=list(act1.steps));
+    ss spawn sc1;
+    act1.safe = sc1.safe;
+    act1.reason = sc1.reason;
+
+    act2 = Action(
+        id="ACT-2",
+        kind="tie_restoration",
+        steps=[
+            SwitchStep(switch_id="SW2", action="open"),
+            SwitchStep(switch_id="TS1", action="close")
+        ],
+        homes_restored=70,
+        safe=True,
+        reason=""
+    );
+    sc2 = SafetyCheck(steps=list(act2.steps));
+    ss spawn sc2;
+    act2.safe = sc2.safe;
+    act2.reason = sc2.reason;
+
+    planned: list[Action] = [act1, act2];
+
+    # 2. Microgrid restoration actions
+    nodes = _all_nodes(ss);
+    for mg in [n for n in nodes if isinstance(n, Microgrid)] {
+        for t in parents(mg) {
+            if not isinstance(t, Transformer) or t.energised or mg.islanded or mg.battery_min <= 0 {
+                continue;
             }
-            stores[0].actions = kept + [a for a in planned if a.id not in [k.id for k in kept]];
+            if not mg.critical_only and t.homes > mg.capacity_homes {
+                continue;
+            }
+            restored: int = 0 if mg.critical_only else t.homes;
+            load: str = t.critical[0].lower() if t.critical else "critical load";
+            source: str = mg.kind.lower().replace("_", " ");
+            what: str = f"{mg.name} powers the {load} on {t.id}" if mg.critical_only else f"{mg.name} powers {t.homes} homes on {t.id}";
+            fits: str = f"{what} for about {mg.battery_min} min on its {source}.";
+            if mg.isolated {
+                planned.append(Action(
+                    id=f"ACT-{mg.id}-START", kind="microgrid",
+                    steps=[SwitchStep(switch_id=mg.id, action="close")],
+                    homes_restored=restored, safe=True, reason=fits
+                ));
+            } else {
+                planned.append(Action(
+                    id=f"ACT-{mg.id}-NOISO", kind="microgrid",
+                    steps=[SwitchStep(switch_id=mg.id, action="close")],
+                    homes_restored=restored, safe=False,
+                    reason=_backfeed_reason(mg, t, nodes)
+                ));
+                planned.append(Action(
+                    id=f"ACT-{mg.id}-START", kind="microgrid",
+                    steps=[SwitchStep(switch_id=mg.id + "-ISO", action="open"), SwitchStep(switch_id=mg.id, action="close")],
+                    homes_restored=restored, safe=True,
+                    reason=f"Open {t.id}'s HV isolator, then start {mg.id}. {fits}"
+                ));
+            }
         }
+    }
+
+    stores = [root -->[?:ActionStore]];
+    if stores {
+        kept: list[Action] = [a for a in stores[0].actions if a.applied];
+        stores[0].actions = kept + [a for a in planned if a.id not in [k.id for k in kept]];
+        self.actions = list(stores[0].actions);
+    } else {
+        self.actions = list(planned);
     }
 }

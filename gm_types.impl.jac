@@ -74,6 +74,18 @@ impl label_crew(c: Crew) -> Crew {
     return c;
 }
 
+impl fix_complaint(c: Complaint) -> Complaint {
+    c.hazard = Hazard(c.hazard);
+    c.lang = Lang(c.lang);
+    return c;
+}
+
+impl fix_parsed(p: ParsedText) -> ParsedText {
+    p.hazard = Hazard(p.hazard);
+    p.lang = Lang(p.lang);
+    return p;
+}
+
 impl label_complaint(c: Complaint) -> Complaint {
     c.hazard_label = hazard_label(c.hazard);
     return c;

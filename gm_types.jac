@@ -73,6 +73,8 @@ obj Fault {
         updated_by_crew: bool = False,
         change_note: str = "",
         explanation: str = "",
+        explanation_key: str = "",    # fault state the explanation was written for
+        found_by: str = "",           # "verifier" for a hidden fault found after a repair
         kind_label: str = "",
         hazard_label: str = "",
         status_label: str = "";
@@ -220,3 +222,7 @@ def crew_status_label(s: CrewStatus) -> str;
 def label_fault(f: Fault) -> Fault;
 def label_crew(c: Crew) -> Crew;
 def label_complaint(c: Complaint) -> Complaint;
+
+"""Enum fields of an obj read back from a node list/dict arrive as plain ints; turn them back into members."""
+def fix_complaint(c: Complaint) -> Complaint;
+def fix_parsed(p: ParsedText) -> ParsedText;

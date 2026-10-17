@@ -127,16 +127,22 @@ impl _clear_storm {
     st.next_complaint_idx = 0;
     st.next_fault_no = 1;
     st.next_complaint_no = 1;
+    st.f5_released = False;
+    st.pending = [];
+    st.restored_at = {};
+    st.verified = [];
     reset_grid();
 }
 
 # ---------------------------------------------------------------- pipeline
-impl storm_start(speed: int, scenario: str = "storm") -> Ack {
+impl storm_start(speed: int, f5: bool = False, scenario: str = "storm") -> Ack {
     ensure_grid();
     _clear_storm();
     st = sim_state();
     island: bool = scenario == "island";
     blackout: bool = scenario == "blackout" or island;
+    # The hidden T4 fuse belongs to the storm; a blackout has no F1 repair.
+    st.f5_enabled = f5 and not blackout;
     if blackout {
         apply_blackout_truth();
     } else {
@@ -178,10 +184,17 @@ impl storm_tick(minutes: float) -> Ack {
         i += 1;
     }
     st.next_complaint_idx = i;
+    # Queued follow-ups (F5) come due like scenario complaints.
+    due: list[Complaint] = [c for c in st.pending if c.time_min <= st.clock_min];
+    if due {
+        released.extend([_copy(c) for c in due]);
+        st.pending = [c for c in st.pending if c.time_min > st.clock_min];
+    }
     # 3-6, 8
     if released {
         process_complaints(released);
     }
+    run_verifier();
     # 7. C's walkers (no-ops until WP-C3 / WP-C4)
     drain_microgrids(minutes);
     run_energiser();
@@ -193,7 +206,7 @@ impl storm_tick(minutes: float) -> Ack {
 
 impl process_complaints(new_items: list[Complaint]) -> int {
     log = complaint_log();
-    earlier: list[Complaint] = list(log.items);
+    earlier: list[Complaint] = [fix_complaint(c) for c in log.items];
     # 3. parse (BD regex, cache, batched LLM) and flag duplicates
     parse_batch(new_items);
     flag_duplicates(new_items, earlier);
@@ -239,7 +252,7 @@ impl submit(text: str, consumer_no: str) -> Complaint {
     c = Complaint(id=f"U{st.next_complaint_no:04d}", text=text, time_min=st.clock_min, consumer_no=consumer_no);
     st.next_complaint_no += 1;
     log = complaint_log();
-    earlier: list[Complaint] = list(log.items);
+    earlier: list[Complaint] = [fix_complaint(c) for c in log.items];
     parse_one(c);
     flag_duplicates([c], earlier);
     label_complaint(c);
@@ -271,6 +284,31 @@ impl run_energiser {
     }
 }
 
+impl run_verifier {
+    st = sim_state();
+    todo: dict[str, float] = {k: v for (k, v) in st.restored_at.items() if k not in st.verified};
+    if len(todo) == 0 {
+        return;
+    }
+    w = Verifier(clock_min=clock(), restored=todo, complaints=[fix_complaint(c) for c in complaint_log().items]);
+    root spawn w;
+    if len(w.new_fault_ids) > 0 {
+        ranked = rank_fault_nodes(clock());
+        for f in ranked {
+            if f.id in w.new_fault_ids {
+                log_event("verify", f"{f.id}: {f.kind.name}@{f.device_id} found - {f.evidence[-1]}", f.id);
+            }
+        }
+    }
+    done: list[str] = list(st.verified);
+    for (k, t0) in todo.items() {
+        if clock() > t0 + w.window_min {
+            done.append(k);
+        }
+    }
+    st.verified = done;
+}
+
 impl run_dispatcher(minutes: float) {
     root spawn Dispatcher(clock_min=clock(), minutes=minutes);
 }
@@ -299,7 +337,7 @@ impl ranked_faults -> list[Fault] {
 }
 
 impl complaints_since(since_min: float) -> list[Complaint] {
-    return [c for c in complaint_log().items if c.time_min >= since_min];
+    return [fix_complaint(c) for c in complaint_log().items if c.time_min >= since_min];
 }
 
 impl events_since(since_min: float) -> list[Event] {
@@ -321,7 +359,11 @@ impl tasks -> list[CrewTask] {
 }
 
 impl actions -> list[Action] {
-    return list(action_store().actions);
+    store = action_store();
+    if not store.actions {
+        root spawn Restorer();
+    }
+    return list(store.actions);
 }
 
 # Applies a safe action's switching steps, then re-runs the Energiser.
@@ -455,6 +497,144 @@ impl crew_fault(crew_id: str) -> Fault | None {
         }
     }
     return None;
+}
+
+impl apply_crew_report(crew_id: str, text: str) -> Fault {
+    nodes = [root -->[?:FaultNode]];
+    faults: list[Fault] = [fn.fault for fn in nodes];
+    task_id: str = "";
+    for c in crews() {
+        if c.id == crew_id {
+            task_id = c.task_fault_id;
+        }
+    }
+    landmark_sec: str = section_for_landmark(build_index(), text);
+    fid: str = pick_fault(task_id, text, faults, landmark_sec);
+    if fid == "" {
+        log_event("crew_report", f"{crew_id}: {text} (no matching fault found)");
+        return label_fault(Fault(id="", kind=FaultKind.UNKNOWN, device_id="", homes_affected=0, change_note=f"{crew_id}: report does not match any active fault"));
+    }
+    hits: list[Fault] = [f for f in faults if f.id == fid];
+    if not hits {
+        return label_fault(Fault(id="", kind=FaultKind.UNKNOWN, device_id="", homes_affected=0));
+    }
+    target: Fault = hits[0];
+    log_event("crew_report", f"{crew_id}: {text}", fid);
+    try {
+        finding = parse_crew_report(text, target);
+    } except Exception as e {
+        log_event("parse_failed", f"Crew report on {fid} could not be interpreted: {str(e)}", fid);
+        return label_fault(target);
+    }
+    update = to_fault_update(finding, fid);
+    walker_ = CrewReport(crew_id=crew_id, fault_id=fid, text=text, update=update, homes=_homes_for(target, update));
+    root spawn walker_;
+    if walker_.result is None {
+        return label_fault(target);
+    }
+    done: Fault = walker_.result;
+    if update.restored {
+        st = sim_state();
+        marks: dict[str, float] = dict(st.restored_at);
+        marks[done.id] = clock();
+        st.restored_at = marks;
+        if st.f5_enabled and not st.f5_released and done.kind == FaultKind.LINE_DOWN {
+            st.pending = list(st.pending) + f5_followup_complaints(clock() + 0.5);
+            st.f5_released = True;
+        }
+        log_event("verify", f"Watching the homes below {done.device_id} for new complaints after the repair", done.id);
+        _restore_truth(done);
+        run_energiser();
+        log_event("restored", f"{done.id}: {done.kind.name}@{done.device_id} restored - crew report", done.id);
+    } elif walker_.changed {
+        log_event("mind_change", f"{done.id}: {done.change_note}", done.id);
+    } else {
+        log_event("fault_update", f"{done.id}: {done.change_note}", done.id);
+    }
+    for f in rank_fault_nodes(clock()) {
+        if f.id == fid {
+            return f;
+        }
+    }
+    return done;
+}
+
+# homes_affected after the update, or 0 to keep the current count.
+impl _homes_for(f: Fault, u: FaultUpdate) -> int {
+    kind = u.new_kind if u.new_kind != FaultKind.UNKNOWN else f.kind;
+    device = u.new_device_id if u.new_device_id != "" else f.device_id;
+    street = u.street if u.street != "" else f.street;
+    if kind == FaultKind.LINE_DOWN or (kind == FaultKind.SERVICE_WIRE and street == "") {
+        return 0;
+    }
+    for n in _all_grid_nodes() {
+        if isinstance(n, Transformer) and n.id == device {
+            if kind == FaultKind.TX_FUSE {
+                return n.homes;
+            }
+            return len([h for h in children(n) if isinstance(h, Home) and h.street.lower() == street.lower()]);
+        }
+    }
+    return 0;
+}
+
+# A repaired fault puts the physical truth back to ok, so the Energiser powers
+# the homes again. A repaired line also clears the lockout of the recloser above it.
+impl _restore_truth(f: Fault) {
+    for n in _all_grid_nodes() {
+        if n.id != f.device_id {
+            continue;
+        }
+        if isinstance(n, Transformer) {
+            n.fuse_ok = True;
+            ok: dict[str, bool] = dict(n.service_ok);
+            for s in list(ok.keys()) {
+                if f.kind == FaultKind.SERVICE_WIRE and s.lower() == f.street.lower() {
+                    ok[s] = True;
+                }
+            }
+            n.service_ok = ok;
+        } elif isinstance(n, Section) {
+            n.line_ok = True;
+            for p in parents(n) {
+                if isinstance(p, Switch) and p.locked_out {
+                    p.locked_out = False;
+                    p.closed = True;
+                }
+            }
+        }
+    }
+}
+
+impl explain(fault_id: str) -> Fault {
+    for fn in [root -->[?:FaultNode]] {
+        if fn.fault.id != fault_id {
+            continue;
+        }
+        f = fn.fault;
+        key: str = fault_key(f);
+        if f.explanation != "" and f.explanation_key == key {
+            return label_fault(f);
+        }
+        text: str = "";
+        try {
+            text = explain_fault(f).strip();
+        } except Exception as e {
+            if f.explanation_key != "fallback:" + key {
+                log_event("explain_failed", f"{f.id}: LLM explanation unavailable, using the evidence summary ({str(e)})", f.id);
+            }
+        }
+        if text != "" {
+            f.explanation = text;
+            f.explanation_key = key;
+        } else {
+            f.explanation = fallback_explanation(label_fault(f));
+            f.explanation_key = "fallback:" + key;    # retried on the next request
+        }
+        fn.fault = label_fault(f);    # reassign so the change persists
+        return fn.fault;
+    }
+    return label_fault(Fault(id="", kind=FaultKind.UNKNOWN, device_id="", homes_affected=0, change_note=f"No fault {fault_id}"));
 }
 
 impl customer_status(consumer_no: str) -> CustomerStatus {

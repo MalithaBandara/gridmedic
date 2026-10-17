@@ -449,7 +449,7 @@ impl find_candidates(idx: GridIndex, complaints: list[Complaint]) -> list[Fault]
 def _all_complaints -> list[Complaint] {
     out: list[Complaint] = [];
     for log in [root -->[?:ComplaintLog]] {
-        out.extend(log.items);
+        out.extend([fix_complaint(c) for c in log.items]);
     }
     return out;
 }
@@ -517,7 +517,9 @@ def _update(fn: FaultNode, c: Fault) {
             eta_min=old.eta_min,
             updated_by_crew=old.updated_by_crew,
             change_note=old.change_note,
-            explanation=old.explanation if same else ""
+            explanation=old.explanation if same else "",
+            explanation_key=old.explanation_key if same else "",
+            found_by=old.found_by
         )
     );
 }
@@ -579,9 +581,15 @@ impl group_faults(complaints: list[Complaint] | None = None) -> list[Fault] {
         }
     }
     # Suspected, unassigned faults the evidence no longer supports are dropped.
+    # A transmission fault explains every transformer, so the early local
+    # guesses go too, even with a crew on the way (the Dispatcher recalls it);
+    # only a fault a crew has corrected on site, or the Verifier found, stays.
+    upstream: bool = len([c for c in cands if c.kind == FaultKind.TRANSMISSION]) > 0;
     for fn in existing {
         f = fn.fault;
-        if f.id not in matched and f.status == FaultStatus.SUSPECTED and f.crew_id == "" and not f.updated_by_crew {
+        stale = f.status == FaultStatus.SUSPECTED and f.crew_id == "";
+        explained = upstream and f.kind != FaultKind.TRANSMISSION and not _closed(f);
+        if f.id not in matched and not f.updated_by_crew and f.found_by == "" and (stale or explained) {
             del fn;
         }
     }

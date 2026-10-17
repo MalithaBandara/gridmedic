@@ -6,7 +6,7 @@ It reads complaints and tallies only, never physical truth (line_ok,
 fuse_ok, service_ok, locked_out) or the Energiser's power state.
 """
 
-import from gm_types { Complaint, Fault, FaultKind, FaultStatus, Hazard, label_fault }
+import from gm_types { Complaint, Fault, FaultKind, FaultStatus, Hazard, label_fault, fix_complaint }
 import from grid {
     GridNode,
     children,

@@ -6,36 +6,58 @@
 
 ---
 
-## 0. Status board (updated 17 Oct, 11:05)
+## 0. Status board (updated 17 Oct, 12:50)
 
-**Where things stand:** `main` (0b3c6ee) runs a full storm in the browser on **A1's real 600-home grid**. Start Storm → auto-ticking clock → complaints parsed and traced upstream → 4 ranked faults on a live map: F1-B line down (205 homes, HOSPITAL + SCHOOL) > T6 (WATER_PUMP) > T9 suspected fuse (confidence 0.4) > T8. Events, evidence and customer status work too. The **complaints** still come from `scenario_placeholder.jac` (B's stand-in storm) until A2 lands.
+**Where things stand:** `main` runs the complete end-to-end GridMedic system on **A1's real 600-home grid** with **A2's real storm scenario** and all operational algorithms. Start Storm → complaints parsed and grouped → 4 ranked faults on live SVG map → autonomous crew dispatch with live movement and ETAs → field report twist (F4 mind-change) → tie restoration planning with safety guarding (ACT-1 blocked by work zone, ACT-2 safe restoring 70 homes) → customer outage portal with bilingual reports and simulated SMS stream.
 
 | WP | Owner | Status | Notes / what's left |
 |---|---|---|---|
-| A0 Scaffold, config | A | ✅ mostly | **Live smoke test not run**: `GEMINI_API_KEY` is not set on the dev machine. Every member still has to star jaseci-labs/jac. |
+| A0 Scaffold, config | A | ✅ | **Live smoke tests done 17 Oct** (see §0.1). Every member still has to star jaseci-labs/jac. |
 | A1 Grid builder | A | ✅ merged | `grid_build.jac`, 12 tests. Adds SCHOOL (T1, T5), POLICE (T10), per-transformer streets and 5 facility landmarks (CLAUDE.md §6.1). `sim.jac` now uses it. |
-| A2 Storm + complaints | A | 🔴 not pushed | Signatures: `generate_complaints(seed=17)`, `apply_storm_truth(f5=False)`, `f5_followup_complaints(start_min)`. After merging, switch the **one** remaining `import from scenario_placeholder` line in `sim.jac` to `grid_storm`, then delete `scenario_placeholder.jac`. |
-| A3 Acceptance tests | A | 🔴 not started | CLAUDE.md §11 tests 1–15 in `tests/*_tests.jac`. Needs A1 + A2. |
+| A2 Storm + complaints | A | ✅ merged | `grid_storm.jac` replaces the placeholder (sim import switched, placeholder deleted). `grid_storm`, `sim`, `agents_feedback` tests pass after merge. The F1-F4 acceptance check (tests 1-5, 7-9) over HTTP is still to do (A3). |
+| A3 Acceptance tests | A | ✅ done | `tests/acceptance_tests.jac` (full storm F1-F4 ranking, F4 crew-report twist), `tests/noise_tests.jac` (tests 8 and 9: duplicates, T7 false reports), plus safety, dispatch, energise and microgrid suites. Test 15 (Verifier) is B7's `tests/verifier_tests.jac`. Run `jac script test` (one process per file): one `jac test -d tests/` process shares a persisted graph, so the suites interfere. HTTP-level run still open. |
 | A4 Jac Hammer deploy | A | 🔴 13:00–14:00 | |
-| A5 README | A | 🟡 draft on main | |
+| A5 README | A | 🟡 draft on main | Updated with facilities, Jac learnings, and architecture. |
 | B0 Contracts | B | ✅ | `api_mock.jac` was deleted at integration. Contract changes since the freeze: Localiser batch fields (B2), and the `children()`/`parents()` helpers in `grid.jac`. |
-| B1 Parser | B | ✅ | 7 MockLLM tests. Real Gemini is unverified (no key). |
+| B1 Parser | B | ✅ | 7 MockLLM tests. Real Gemini verified live in one batched call: 5/6 hazards, Sinhala OK (§0.1). |
 | B2 Localiser + grouping | B | ✅ | One Localiser spawn per tick: 109 complaints in 0.4 s. |
 | B3 Prioritiser | B | ✅ | Test 7 order passes. |
-| B4 Sim + real API | B | ✅ | ~1 s per tick at 1×. `sim.LOCK` serialises the writer endpoints. All module tests pass on the A1 grid. Still to do: re-verify F1–F4 (hazards included) on A2's complaints. |
-| B5 Crew-report feedback | B | 🔴 next | The `crew_report` endpoint currently only logs the text. Needs `agents_feedback.jac` + `grid.impl/feedback.impl.jac` (F4 mind-change, RESTORED → physical truth back to ok). |
-| B6 Explainer + noise | B | 🔴 | `explain_fault` by llm() + an `explain` endpoint. Duplicates are already logged. |
-| B7 Verifier | B | 🔴 T3 | Needs B5 and C3. |
-| C0 UI shell + routing | C | ✅ merged | `/` operator, `/customer`. |
-| C1 Grid map | C | ✅ basic | `components/GridMap.cl.jac` (built at integration) draws `GridView`. Still to do: click-to-select a device, crew animation. |
-| C2 Panels + poll loop | C | ✅ basic | Auto-tick every 1 s while running (never overlapping), live counters, faults, crews, events, Why? evidence. |
-| C3 Energiser | C | 🔴 **blocker** | `energise.impl.jac` is empty, so "homes off" stays 0 and sections never grey out. Use `children()`/`parents()`, not typed edges (§6). |
-| C4 Dispatcher | C | 🔴 | `dispatch.impl.jac` is empty, so crews stay idle. `sim.run_dispatcher` already spawns it every tick with `clock_min` and `minutes`. |
-| C5 Crew box + mind-change | C | 🟡 | The box and presets exist. Mind-change highlight waits on B5. |
-| C6 Customer page | C | 🟡 | Report + status + SMS panel are wired to the real `submit_complaint`/`get_status`. Check the 3 s poll and status-change SMS. |
-| C7 Restorer + SafetyCheck | C | 🔴 T3 | Needs C3 + C4. `sim.apply()` already executes the switching steps of a safe action. |
+| B4 Sim + real API | B | ✅ | ~1 s per tick at 1×. `sim.LOCK` serialises the writer endpoints. All module tests pass on the A1 grid. |
+| B5 Crew-report feedback | B | ✅ merged | `agents_feedback.jac` (`parse_crew_report` by llm + `pick_fault` routing: crew task, else device/street named in the text, else landmark section), `CrewReport.find` / `FaultNode.reevaluate`, `sim.apply_crew_report`, real `crew_report` endpoint. Test 6 passes (F4 -> SERVICE_WIRE, Lake Road, 15 homes, conf 0.9); a restored report resets `fuse_ok` / `line_ok` / `service_ok` (and the recloser lockout) and runs the Energiser. Contract addition: `CrewReport.homes`. Live Gemini parse of the T9 report verified once (§0.1). |
+| B6 Explainer + noise | B | 🟡 explainer ✅ | `agents_explain.jac`: `explain_fault` by llm(), cached on the fault under `explanation_key` (a signature that ignores priority and age, so it recomputes only on real change); an LLM failure falls back to two sentences built from the evidence and is retried next time. New `explain(fault_id)` endpoint (contract addition, approved) returns the Fault with `explanation`. The Why? panel calls it on selection and after a crew report (checked in the browser 17 Oct, fallback text). Not tested with live Gemini. Still open: label lone false reports "possible individual issue", and a callback list for unlocatable complaints (CLAUDE.md §8.2 step 5). |
+| B7 Verifier | B | ✅ | `Verifier.check` (`grid.impl/verify.impl.jac`): after a crew restores a fault, 3+ distinct homes on one transformer below it complaining within 5 min (not duplicates, no active fault there) raise a new TX_FUSE with `found_by="verifier"` and evidence "complaints continued after F1-B repair". `sim` queues `f5_followup_complaints` when F1 is restored and F5 is on, runs the verifier every tick and logs `verify` events. F5 is off by default: `start_storm` takes an optional `f5: bool`, set by the checkbox in the sim panel (checked in the browser). Contract additions: `start_storm.f5`, `Fault.found_by`, `SimState` queue/restore fields, Verifier fields. Test 15 passes (`tests/verifier_tests.jac`). The follow-up flow needs a crew report, so it has only run on MockLLM. |
+| C0 UI shell + routing | C | ✅ merged | `/` operator, `/customer`. Clean control room header + minimizable floating simulation modal. |
+| C1 Grid map | C | ✅ merged | `components/GridMap.cl.jac` draws 600 homes, transformers, feeders, switches, landmarks, and live crew movement. |
+| C2 Panels + poll loop | C | ✅ merged | Auto-tick poll loop, live counters (Complaints, Faults, Consumers Off, Critical Loads: 🏥 Hospital & 💧 Pump, Restored), ranked faults, crew tasks, event log. |
+| C3 Energiser | C | ✅ merged | `grid.impl/energise.impl.jac`: Bidirectional flood fill over `children()`/`parents()`, respecting switches, `line_ok`, `fuse_ok`, and `service_ok[street]`. 3/3 tests pass in `tests/energise_tests.jac`. Outages correctly show 310 off during storm, backfeed restores 70 homes on T5. |
+| C4 Dispatcher | C | ✅ merged | `grid.impl/dispatch.impl.jac`: Autonomous priority-based dispatch matching travel-time tables, crew coordinate animation along edges, arrival detection & `work_zone` marking. Test 14 passes in `tests/dispatch_tests.jac`. |
+| C5 Crew box + mind-change | C | ✅ merged | Interactive field report box with presets ("Preset: T9 Twist", "Preset: Pole 23 Safe"), "Why?" evidence breakdown, and `Mind-changed ↺` badge highlight. |
+| C6 Customer page | C | ✅ merged | `ui_customer.cl.jac`: 10-digit consumer search (`4512300017`), bilingual Sinhala & English reporting form, simulated 1987 / CEBCare SMS notification stream. |
+| C7 Restorer + SafetyCheck | C | ✅ merged | `grid.impl/restore.impl.jac`, `grid.impl/safety.impl.jac`, `components/ActionsPanel.cl.jac`. ACT-1 blocked by active crew work zone, ACT-2 safe via SW2 isolation (70 consumers restored) with 1-click execution. Tests 12 & 13 pass in `tests/safety_tests.jac`. |
 
-**Critical path to the 13:00 checkpoint:** A2 lands → switch the `sim.jac` import → C3 Energiser (so outages show). **To 15:00:** B5 (F4 twist) + C4 (crews move) + C5 highlight. **Needed for hazards:** set `GEMINI_API_KEY` and run `scripts/smoke_llm.jac`.
+**Current Focus:** A4 Jac Hammer test deployment. B6 noise polish (individual-issue label, callback list). Run `explain_fault` and a full uncached storm once with the user's go (§0.1), then the demo dry-run. Live dev server: `jac start --dev` (stop it before `jac clean`, §0.2).
+
+### 0.1 Live Gemini verification (17 Oct) and quota rule
+
+**Quota rule (also at the top of CLAUDE.md):** the key allows ~500 requests/day. No agent makes a real Gemini call without the user's explicit "go" for that run, with the request count stated first. Tests use `MockLLM`. About 2 requests used so far today.
+
+| Check | Script | Requests | Result |
+|---|---|---|---|
+| Typed batched parse, English + 5 Sinhala phrases | `scripts/smoke_llm.jac` (rewritten from 6 calls to **1** batched `parse_texts`) | 1 | 6 results for 6 inputs, mapped back by `index`. 5/6 hazards matched. Sinhala wire-down, sparks and transformer noise were correct, and the two plain "no power" phrases were `NONE`. The one miss ("Wire fallen ... pole 23, sparks!") came back `SPARKS`, while the script expected `WIRE_DOWN`. The text contains both, and CLAUDE.md test 2 accepts either, so it is a loose expectation, not a parser bug. `pole 23` was extracted as the landmark. |
+| F4 twist: `parse_crew_report` on the T9 crew report | `scripts/smoke_feedback.jac` (new) | 1 | PASS: `device_ok=True`, `SERVICE_WIRE`, street `Lake Road`, `restored=False`, `fault_id` copied correctly. |
+
+**Still not tested live (ask before running):** `explain_fault` (Explainer), and a full uncached storm through `jac start` (~15 batched calls). Both run on MockLLM or the evidence fallback in tests.
+
+**Run note:** `GEMINI_API_KEY` set with `$env:` in a terminal tab is not visible to the agent's shell. Without it, a run fails with `AuthenticationError` before using quota. The user ran both scripts in their own tab.
+
+**Optional cleanup:** make the `smoke_llm.jac` case 1 accept either `WIRE_DOWN` or `SPARKS`.
+
+### 0.2 Found while verifying B5-B7 (17 Oct)
+
+- **Enums in obj lists/dicts on a node come back as ints.** `ComplaintLog.items` and `ParseCache.entries` read through a fresh node lookup gave `hazard == 2`, so `Hazard.X` comparisons were False and F1 never got its hazard (priority 745, not 1745), even with a live LLM. Fixed with `gm_types.fix_complaint` / `fix_parsed` at every read site; details in `JAC_FINDINGS.md`. Any new code reading such objs back must call them.
+- **`jac clean` fails while a dev server runs** (WinError 32), and `jac test` then reuses the server's data, so cache-dependent tests fail. Stop the server first. A leftover process from a long run can cause one-off failures; rerun the file alone.
+- **UI:** the 1 s poll kept calling a `loadInitial` with a stale closure and reset the selected fault to the first one every tick. The selection now lives in the module-level `_sel`. The Why? text is tagged with its fault id so a slow reply cannot show under another fault.
+- **Stale test fixtures:** `tests/` imported the deleted `scenario_placeholder`; the `grid.test.jac` local-branch homes lacked `transformer_id`. Both fixed.
 
 ---
 
@@ -148,7 +170,8 @@ gridmedic/
     EventLog.cl.jac                  # WP-C2  event strip + "Why?" panel
     CrewReportBox.cl.jac             # WP-C5  crew picker + text box + preset buttons
     ActionsPanel.cl.jac              # WP-C7  restoration actions + Apply + safety result
-  scripts/smoke_llm.jac              # WP-A0  real Gemini check (typed obj + Sinhala)
+  scripts/smoke_llm.jac              # WP-A0  real Gemini check, ONE batched call (typed obj + Sinhala)
+  scripts/smoke_feedback.jac         # real Gemini check of parse_crew_report, ONE call (F4 twist)
   tests/                             # WP-A3  CLAUDE.md §11 acceptance tests (*_tests.jac)
   *.test.jac                         # unit tests owned by the module's WP
 ```
@@ -457,17 +480,27 @@ Each WP lists: **Owns** (the only files it may edit) · **Needs** (merged WPs) �
 - **09:50**
   - ✅ Contracts frozen and on `main`.
   - ✅ Every endpoint returns mocks (now real bodies).
-  - ❌ The smoke LLM test passes (not run: no `GEMINI_API_KEY`).
+  - ✅ The smoke LLM test passes (17 Oct, 1 batched request: 5/6 hazards, the one miss is an ambiguous expectation, see §0.1).
   - ✅ The language bar shows Jac.
 - **13:00**
-  - 🟡 Start Storm → complaint dots → F1–F4 on the map → ranked list. Works on the A1 grid with the placeholder storm. Still needed: A2 complaints and C3, so outages show.
-  - ❌ A3 tier-1 tests pass.
+  - ✅ Start Storm → complaints → F1–F4 on the map → ranked list → physical outages show (A2 complaints + C3 Energiser active).
+  - 🟡 A3 acceptance tests partially run (all C3/C4/C7 and B5 tests pass).
 - **15:00**
-  - The F4 mind-change works live.
-  - Crews move.
-  - Customer status works.
-  - Decide: keep T3 or cut it.
+  - ✅ The F4 mind-change works live (B5 feedback loop + C5 UI presets & highlight).
+  - ✅ Crews move autonomously with live ETAs and work zone safety marking (C4 Dispatcher).
+  - ✅ Customer status works at `/customer` with bilingual reporting and SMS notifications (C6).
+  - ✅ Tier 3 Restorer + SafetyCheck working (C7: ACT-1 blocked by work zone, ACT-2 safe via SW2 isolation).
 - **15:30**
   - Freeze. Full demo dry-run, then record.
 - **17:15**
   - Submitted: GitHub link, video, write-up, and every member has starred the Jac repo.
+
+---
+
+## 8. To change later (found 17 Oct, A3 review)
+
+- **README test section:** it says "run the entire test pipeline with the built-in script" but lists the commands by hand. Point it at `jac script test` (defined in `jac.toml`), and add `tests/verifier_tests.jac` to that script once B7 is stable.
+- **README line counts:** the "99.9% Jac, 27 files, 4,820 lines" table looks hand-written. Replace it with the real figure from GitHub's language bar before submitting.
+- **README Verifier claim:** the README presents the Verifier as complete while B7 is still in progress. Confirm B7 works (test 15) before keeping it.
+- **Test isolation:** run test files one per process (`jac script test`). A single `jac test -d tests/` shares one persisted graph, and a second session running `jac test` or `jac start` in the same checkout corrupts it. Use separate worktrees for parallel sessions.
+- **HTTP-level acceptance run** (A3): still open.

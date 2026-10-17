@@ -68,7 +68,7 @@ def _start {
     cache.entries = entries;
     agents_parse.reset_parse_stats();
     agents_parse.llm = MockLLM(model_name="mockllm", config={"outputs": []});
-    storm_start(5, "island");
+    storm_start(5, scenario="island");
 }
 
 # Plays the whole flood once; later tests read the result.
