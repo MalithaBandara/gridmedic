@@ -14,7 +14,7 @@ impl Localiser.climb {
     tie = isinstance(here, Switch)
         and ((here as Switch).normally_open or (here as Switch).kind == "tie");
     if not counted and not tie {
-        ups = [p for p in [here <-:Feeds:<-] if p.id not in self.path];
+        ups = [p for p in parents(here) if p.id not in self.path];
         visit ups;
     }
 }

@@ -9,8 +9,8 @@ fuse_ok, service_ok, locked_out) or the Energiser's power state.
 import from gm_types { Complaint, Fault, FaultKind, FaultStatus, Hazard, label_fault }
 import from grid {
     GridNode,
-    Feeds,
-    Located,
+    children,
+    parents,
     Section,
     Switch,
     Transformer,

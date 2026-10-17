@@ -17,7 +17,7 @@ impl build_index -> GridIndex {
         seen.add(n.id);
         if isinstance(n, Section) {
             sections.append(n);
-            for lm in [n <-:Located:<-] {
+            for lm in [n <--] {
                 if isinstance(lm, Landmark) and lm.id not in seen {
                     seen.add(lm.id);
                     idx.landmarks.append(lm);
@@ -33,7 +33,7 @@ impl build_index -> GridIndex {
         } elif isinstance(n, Landmark) {
             idx.landmarks.append(n);
         }
-        for m in [n -->] {
+        for m in children(n) {
             if isinstance(m, GridNode) and m.id not in seen {
                 queue.append(m);
             }
@@ -46,7 +46,7 @@ impl build_index -> GridIndex {
         idx.child_sections[s.id] = [];
     }
     for s in sections {
-        for c in [s ->:Feeds:->] {
+        for c in children(s) {
             if isinstance(c, Transformer) {
                 idx.tx_of[s.id].append(c);
                 idx.section_of[c.id] = s.id;
@@ -54,7 +54,7 @@ impl build_index -> GridIndex {
                 idx.child_sections[s.id].append(c.id);
                 idx.parent_section[c.id] = s.id;
             } elif isinstance(c, Switch) and not _is_tie(c) {
-                for d in [c ->:Feeds:->] {
+                for d in children(c) {
                     if isinstance(d, Section) {
                         idx.child_sections[s.id].append(d.id);
                         idx.parent_section[d.id] = s.id;
@@ -64,7 +64,7 @@ impl build_index -> GridIndex {
         }
     }
     for t in idx.transformers {
-        idx.tx_homes[t.id] = [h for h in [t ->:Feeds:->] if isinstance(h, Home)];
+        idx.tx_homes[t.id] = [h for h in children(t) if isinstance(h, Home)];
     }
     by_id: dict[str, Section] = {s.id: s for s in sections};
     order: list[str] = [s.id for s in sections if s.id not in idx.parent_section];
@@ -173,7 +173,7 @@ def _home_tx(idx: GridIndex, c: Complaint) -> str {
     if h.transformer_id != "" {
         return h.transformer_id;
     }
-    ups = [p for p in [h <-:Feeds:<-] if isinstance(p, Transformer)];
+    ups = [p for p in parents(h) if isinstance(p, Transformer)];
     return ups[0].id if len(ups) > 0 else "";
 }
 
