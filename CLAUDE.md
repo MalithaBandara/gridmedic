@@ -205,7 +205,7 @@ Build strictly in tier order. Do not start a higher tier until the lower tier wo
 - **Safety rule:** a section where a crew is working (**work zone**) must never be connected to any energised source. Any switching step that would energise a work zone is **blocked**.
 - **Transformer fuse blown:** only that transformer's homes lose power.
 - **Service / LV street wire down:** only homes on one street under a transformer lose power (partial outage of that transformer).
-- **Critical loads:** hospital (on T3), water pump (on T6) — prioritised.
+- **Critical loads:** hospital (on T3), water pump (on T6), schools (on T1 and T5), police station (on T10) — prioritised. Tags in `Transformer.critical`: `HOSPITAL`, `WATER_PUMP`, `SCHOOL`, `POLICE`.
 
 ---
 
@@ -218,24 +218,31 @@ SUBSTATION SS1 "Moratuwa Grid Substation"   pos (200,300)
 
 FEEDER F1 (from SS1) — capacity 700 homes
   F1-A (350,150) --SW1 [recloser, closed] (450,150)--> F1-B (550,150) --SW2 [closed] (650,150)--> F1-C (750,150)
-  T1 on F1-A (320,90)  60 homes
-  T2 on F1-A (380,90)  45 homes
-  T3 on F1-B (520,90)  80 homes + HOSPITAL (critical)
-  T4 on F1-B (580,90)  55 homes
-  T5 on F1-C (750,90)  70 homes
+  T1 on F1-A (320,90)  60 homes + SCHOOL   (streets: Railway Avenue 30, Galle Road 30)
+  T2 on F1-A (380,90)  45 homes            (streets: Church Road 25, Market Street 20)
+  T3 on F1-B (520,90)  80 homes + HOSPITAL (streets: Hospital Road 45, Pansala Road 35)
+  T4 on F1-B (580,90)  55 homes            (streets: Old Mill Road 30, Canal Road 25)
+  T5 on F1-C (750,90)  70 homes + SCHOOL   (streets: School Lane 40, Bridge Road 30)
   Landmark: "Pole 23" on F1-B at (560,150)
 
 FEEDER F2 (from SS1) — capacity 700 homes
   F2-A (350,450) --SW3 [closed] (500,450)--> F2-B (650,450)
-  T6  on F2-A (320,520) 50 homes + WATER PUMP (critical)
-  T7  on F2-A (380,520) 65 homes
-  T8  on F2-B (620,520) 40 homes
-  T9  on F2-B (680,520) 75 homes  (streets: Lake Road 15, Temple Road 30, Station Road 30)
-  T10 on F2-B (740,520) 60 homes
+  T6  on F2-A (320,520) 50 homes + WATER_PUMP (streets: Reservoir Road 25, Pump House Road 25)
+  T7  on F2-A (380,520) 65 homes              (streets: Beach Road 35, Fisheries Road 30)
+  T8  on F2-B (620,520) 40 homes              (streets: Park Road 20, Kanatta Road 20)
+  T9  on F2-B (680,520) 75 homes              (streets: Lake Road 15, Temple Road 30, Station Road 30)
+  T10 on F2-B (740,520) 60 homes + POLICE     (streets: Ward Place 30, Factory Road 30)
 
 TIE SWITCH TS1 (800,300): F1-C <-> F2-B, normally OPEN
 
 Totals: F1 = 310 homes, F2 = 290 homes, all = 600 homes.
+
+PRIORITY FACILITIES (Landmark nodes, Located on their section; not counted as homes):
+  LM-HOSPITAL       "Lakeview General Hospital"      T3  / F1-B (500,60)
+  LM-PUMP           "Reservoir Road Pumping Station" T6  / F2-A (300,550)
+  LM-POLICE         "Ward Place Police Station"      T10 / F2-B (760,550)
+  LM-SCHOOL-BRIDGE  "Bridge Road Maha Vidyalaya"     T5  / F1-C (770,60)
+  LM-SCHOOL-RAILWAY "Railway Avenue Primary School"  T1  / F1-A (300,60)
 
 DEPOTS (Electricity Consumer Service Centres):
   CSC-North (80,150): Crew A, Crew B
@@ -250,6 +257,9 @@ TRAVEL TIMES (minutes):
 ```
 
 Homes: generate `Home` nodes per transformer, each with a unique 10-digit `consumer_no` (e.g. prefix by transformer: T3 homes `4512300001…`), a `street`, and an x/y offset clustered around the transformer.
+
+**Built by `grid_build.jac` (WP-A1):** `build_grid()` creates all of the above under `root` and returns SS1; calling it again changes nothing. `reset_grid()` restores the normal state (switches normal, everything healthy, tallies, faults and logs cleared, crews idle) and keeps `ParseCache`. Homes are numbered street by street in the order listed, in rows of 10 dots 6 px apart, above their transformer on F1 and below it on F2. Crews are `CrewNode`s under `root`, each `Located` on its depot.
+- The storm generator (A2) must keep F1's hazard complaints on Pole 23 / F1-B: a hazard landmark on another section triggers a line-down suspicion there (§8.2 step 2). The parser matches a facility landmark only by its full name.
 
 ### 6.2 Storm scenario — ground truth (agents must DISCOVER this; never read it directly)
 
