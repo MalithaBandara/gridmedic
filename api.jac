@@ -36,7 +36,8 @@ walker:pub get_grid {
 }
 
 # Starts a scenario; complaints are released by tick. reports[0]
-# scenario: "storm" (default, F1-F4) or "blackout" (transmission line TL1 trips)
+# scenario: "storm" (default, F1-F4), "blackout" (transmission line TL1 trips)
+# or "island" (national grid collapse: same dark grid, island-wide complaint flood)
 walker:pub start_storm {
     has speed: int = 1,
         scenario: str = "storm",

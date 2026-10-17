@@ -40,17 +40,28 @@ impl log_event(kind: str, text: str, fault_id: str = "") {
 impl _scenario -> list[Complaint] {
     name = _active_scenario();
     if name not in _SCENARIOS {
-        raw: list[Complaint] = blackout_complaints() if name == "blackout" else generate_complaints(STORM_SEED);
+        raw: list[Complaint] = generate_complaints(STORM_SEED);
+        if name == "blackout" {
+            raw = blackout_complaints();
+        } elif name == "island" {
+            raw = island_complaints();
+        }
         _SCENARIOS[name] = sorted(raw, key=lambda c: Complaint : c.time_min);
     }
     return _SCENARIOS[name];
 }
 
 # The scenario this sim applied, read back from the truth it set, so it
-# survives a server restart mid-run: a tripped TL1 means the blackout.
+# survives a server restart mid-run: a tripped TL1 means a blackout. The
+# island-wide one trips TL1 too, so its start event tells them apart.
 impl _active_scenario -> str {
     for tl in [root -->[?:TransmissionLine]] {
         if not tl.line_ok {
+            for e in event_log().events {
+                if e.kind == "storm" and e.text.startswith("Island-wide blackout") {
+                    return "island";
+                }
+            }
             return "blackout";
         }
     }
@@ -124,7 +135,8 @@ impl storm_start(speed: int, scenario: str = "storm") -> Ack {
     ensure_grid();
     _clear_storm();
     st = sim_state();
-    blackout: bool = scenario == "blackout";
+    island: bool = scenario == "island";
+    blackout: bool = scenario == "blackout" or island;
     if blackout {
         apply_blackout_truth();
     } else {
@@ -134,6 +146,13 @@ impl storm_start(speed: int, scenario: str = "storm") -> Ack {
     st.speed = max(1, speed);
     run_energiser();
     run_restorer();
+    if island {
+        # Logged before _scenario(), which reads it to pick the island flood.
+        log_event("storm", f"Island-wide blackout started at {st.speed}x: the national grid is down");
+        n_island = len(_scenario());
+        log_event("storm", f"{n_island} complaints will arrive over {int(ISLAND_LENGTH_MIN)} minutes");
+        return Ack(ok=True, message=f"Island-wide blackout started at {st.speed}x", clock_min=st.clock_min);
+    }
     n = len(_scenario());
     if blackout {
         log_event("storm", f"Blackout started at {st.speed}x: {n} complaints will arrive over {int(BLACKOUT_LENGTH_MIN)} minutes");
