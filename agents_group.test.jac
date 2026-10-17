@@ -177,7 +177,9 @@ test "index follows the §6.1 topology" {
     assert [s.id for s in idx.sections] == ["F1-A", "F2-A", "F1-B", "F2-B", "F1-C"];
     assert len(idx.homes) == 600;
     assert subtree_sections(idx, "F1-B") == ["F1-B", "F1-C"];
-    assert landmark_section(idx, "near Pole 23!") == "F1-B";
+    assert section_for_landmark(idx, "near Pole 23!") == "F1-B";
+    assert section_for_landmark(idx, "Pole No. 23") == "F1-B";
+    assert section_for_landmark(idx, "near the temple") == "";
 }
 
 test "storm complaints group into exactly F1-F4 (tests 1-5)" {

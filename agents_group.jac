@@ -21,6 +21,7 @@ import from grid {
     SimState,
     ComplaintLog
 }
+import re;
 
 # §8.2 thresholds (ratio = distinct reporting homes / homes)
 glob HOT_RATIO: float = 0.2;           # step 2: a transformer that counts towards a line fault
@@ -41,8 +42,12 @@ obj GridIndex {
         child_sections: dict[str, list[str]] = {},    # through normal (non-tie) switches
         parent_section: dict[str, str] = {},
         tx_homes: dict[str, list[Home]] = {},
-        landmarks: list[Landmark] = [];
+        landmarks: list[Landmark] = [],
+        landmark_of: dict[str, str] = {};             # landmark text -> section id (memo)
 }
+
+"""Section id a landmark text refers to ('near pole 23' -> 'F1-B'), or ''. Memoised on the index."""
+def section_for_landmark(idx: GridIndex, text: str) -> str;
 
 def build_index -> GridIndex;
 
@@ -58,9 +63,6 @@ def group_faults(complaints: list[Complaint] | None = None) -> list[Fault];
 
 """The faults the tallies point to right now, with empty ids. Pure: changes nothing."""
 def find_candidates(idx: GridIndex, complaints: list[Complaint]) -> list[Fault];
-
-"""Section id a landmark text refers to ('near pole 23' -> 'F1-B'), or ''."""
-def landmark_section(idx: GridIndex, text: str) -> str;
 
 def ratio(idx: GridIndex, t: Transformer) -> float;
 def home_count(idx: GridIndex, t: Transformer) -> int;

@@ -4,10 +4,6 @@ def _is_tie(sw: Switch) -> bool {
     return sw.normally_open or sw.kind == "tie";
 }
 
-def _norm(text: str) -> str {
-    return "".join([ch for ch in text.lower() if ch.isalnum()]);
-}
-
 impl build_index -> GridIndex {
     idx = GridIndex();
     seen: set[str] = set();
@@ -95,7 +91,7 @@ impl localise(c: Complaint, idx: GridIndex) -> bool {
         h spawn Localiser(complaint_id=c.id);
         return True;
     }
-    sid = landmark_section(idx, c.landmark);
+    sid = section_for_landmark(idx, c.landmark);
     for s in idx.sections {
         if s.id == sid {
             s spawn Localiser(complaint_id=c.id);
@@ -114,25 +110,6 @@ impl localise_all(complaints: list[Complaint]) -> int {
         }
     }
     return located;
-}
-
-impl landmark_section(idx: GridIndex, text: str) -> str {
-    key = _norm(text);
-    if key == "" {
-        return "";
-    }
-    for lm in idx.landmarks {
-        name = _norm(lm.name);
-        if (name != "" and name in key) or _norm(lm.id) == key {
-            return lm.section_id;
-        }
-    }
-    for s in idx.sections {
-        if _norm(s.id) == key {
-            return s.id;
-        }
-    }
-    return "";
 }
 
 impl home_count(idx: GridIndex, t: Transformer) -> int {
@@ -230,7 +207,7 @@ def _complaints_for(
             if tid in tx_ids {
                 out.append(c);
             }
-        } elif landmark_section(idx, c.landmark) in sec_ids {
+        } elif section_for_landmark(idx, c.landmark) in sec_ids {
             out.append(c);
         }
     }
@@ -325,7 +302,7 @@ impl find_candidates(idx: GridIndex, complaints: list[Complaint]) -> list[Fault]
     hazard_at: dict[str, int] = {};
     for c in complaints {
         if not c.is_duplicate and c.hazard != Hazard.NONE {
-            sid = landmark_section(idx, c.landmark);
+            sid = section_for_landmark(idx, c.landmark);
             if sid != "" {
                 hazard_at[sid] = hazard_at.get(sid, 0) + 1;
             }
@@ -551,4 +528,40 @@ impl group_faults(complaints: list[Complaint] | None = None) -> list[Fault] {
         }
     }
     return [fn.fault for fn in [root -->[?:FaultNode]]];
+}
+
+impl section_for_landmark(idx: GridIndex, text: str) -> str {
+    if text == "" {
+        return "";
+    }
+    if text not in idx.landmark_of {
+        idx.landmark_of[text] = _match_landmark(idx, text);
+    }
+    return idx.landmark_of[text];
+}
+
+# Same matching rules as agents_parse.landmark_section, but over the landmarks
+# this index already holds: that function walks the whole grid on every call
+# (~7 s under jac test), too slow to call per complaint inside a tick.
+def _match_landmark(idx: GridIndex, text: str) -> str {
+    t = " " + " ".join(re.findall(r"[a-z0-9]+", text.lower())) + " ";
+    if t.strip() == "" {
+        return "";
+    }
+    for lm in idx.landmarks {
+        name = " ".join(re.findall(r"[a-z0-9]+", lm.name.lower()));
+        if name and (" " + name + " ") in t {
+            return lm.section_id;
+        }
+        # "pole 23" also matches "pole no 23", "pole #23" and "kanuwa 23"
+        digits = re.findall(r"\d+", name);
+        if digits and ("pole" in name) {
+            num: str = str(digits[0]);
+            pattern: str = r"(pole|kanuwa|කණුව)\D{0,6}" + num + r"(?!\d)";
+            if re.search(pattern, text.lower()) {
+                return lm.section_id;
+            }
+        }
+    }
+    return "";
 }
