@@ -147,7 +147,6 @@ impl storm_start(speed: int, f5: bool = False, scenario: str = "storm") -> Ack {
     ensure_grid();
     _clear_storm();
     st = sim_state();
-    log_event("storm", "Language model: " + ("MOCK, offline rules, no Gemini requests" if is_mock() else "REAL, Gemini (uses API quota)"));
     island: bool = scenario == "island";
     blackout: bool = scenario == "blackout" or island;
     # The hidden T4 fuse belongs to the storm; a blackout has no F1 repair.
@@ -166,14 +165,17 @@ impl storm_start(speed: int, f5: bool = False, scenario: str = "storm") -> Ack {
         log_event("storm", f"Island-wide blackout started at {st.speed}x: the national grid is down");
         n_island = len(_scenario());
         log_event("storm", f"{n_island} complaints will arrive over {int(ISLAND_LENGTH_MIN)} minutes");
+        log_event("llm", "Language model: " + ("MOCK, offline rules, no Gemini requests" if is_mock() else "REAL, Gemini (uses API quota)"));
         return Ack(ok=True, message=f"Island-wide blackout started at {st.speed}x", clock_min=st.clock_min);
     }
     n = len(_scenario());
     if blackout {
         log_event("storm", f"Blackout started at {st.speed}x: {n} complaints will arrive over {int(BLACKOUT_LENGTH_MIN)} minutes");
+        log_event("llm", "Language model: " + ("MOCK, offline rules, no Gemini requests" if is_mock() else "REAL, Gemini (uses API quota)"));
         return Ack(ok=True, message=f"Blackout started at {st.speed}x", clock_min=st.clock_min);
     }
     log_event("storm", f"Storm started at {st.speed}x: {n} complaints will arrive over {int(STORM_LENGTH_MIN)} minutes");
+    log_event("llm", "Language model: " + ("MOCK, offline rules, no Gemini requests" if is_mock() else "REAL, Gemini (uses API quota)"));
     return Ack(ok=True, message=f"Storm started at {st.speed}x", clock_min=st.clock_min);
 }
 
