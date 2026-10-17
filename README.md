@@ -31,6 +31,7 @@ An open-source, graph-native decision support engine built in pure [Jac](https:/
 - [Why Pure Jac?](#why-pure-jac)
 - [User Interfaces](#user-interfaces)
 - [Demo Scenario & Ground Truth](#demo-scenario--ground-truth)
+- [API Reference](#api-reference)
 - [Quick Start](#quick-start)
 - [Running the Test Suite](#running-the-test-suite)
 - [Project Layout](#project-layout)
@@ -38,6 +39,7 @@ An open-source, graph-native decision support engine built in pure [Jac](https:/
 - [Future Work & Production Roadmap](#future-work--production-roadmap)
 - [Safety & Operational Principles](#safety--operational-principles)
 - [Team & Acknowledgements](#team--acknowledgements)
+- [License](#license)
 
 ---
 
@@ -45,7 +47,7 @@ An open-source, graph-native decision support engine built in pure [Jac](https:/
 
 Every power outage triggers a deluge of distress calls and messages. During severe weather, emergency dispatchers and control-room operators are overwhelmed by thousands of complaints describing the **exact same root fault**:
 
-* One blown $33\text{ kV}$ distribution transformer fuse can generate **80+ urgent phone calls**.
+* One blown 33 kV distribution transformer fuse can generate **80+ urgent phone calls**.
 * A fallen medium-voltage line conductor can knock out an entire feeder section and bring **hundreds of complaints**.
 * Control rooms struggle to distinguish high-risk life-safety hazards (live wires on roads, sparking transformers) from minor low-voltage service wire faults.
 
@@ -65,7 +67,7 @@ GridMedic is an **autonomous, graph-native AI decision-support platform** that c
 1. **Understands Messy Multilingual Reports:** Ingests standard `BD <consumer_no>` SMS codes alongside noisy English and Sinhala free text. Uses deterministic regex for instant SMS matching and batched Google Gemini `by llm()` parsing for natural language. It extracts danger signals (fallen wires, arcing sparks, transformer fires) and local landmarks (*"near pole 23"*, *"hospital road"*).
 2. **Traces Root Causes via Topological Walkers:** Instead of querying relational databases, Jac `Localiser` walkers traverse the distribution graph upstream from affected consumer meters. Substation sections and transformers tally their own reports in real time, clustering hundreds of calls into discrete faults: a snapped MV line conductor, a blown transformer fuse, or an isolated LV service drop.
 3. **Prioritises by Life Safety & Critical Infrastructure:** Dynamically ranks faults using a multi-factor formula:
-   $$\text{Score} = 1000 \cdot [\text{Hazard}] + 500 \cdot [\text{Critical Load}] + [\text{Homes Affected}] + 2 \cdot [\text{Wait Minutes}]$$
+   $$\text{Priority Score} = 1000 \cdot [\text{Hazard}] + 500 \cdot [\text{Critical Load}] + [\text{Homes Affected}] + 2 \cdot [\text{Wait Minutes}]$$
    Active hazards (live conductors on roads) and life-support infrastructure (hospitals, water pumping stations, schools, police depots) jump straight to the top of the queue.
 4. **Dispatches Field Crews Intelligently:** Computes travel times from Consumer Service Centre (CSC) depots to grid zones and dispatches the nearest available crew. Tracks crew travel and arrival in real time.
 5. **Self-Corrects from Field Feedback ("Agent Changes Its Mind"):** When a crew arrives on site and sends unstructured field notes (*"T9 transformer is fine, fuse intact; overhead service line snapped on Lake Road"*), GridMedic's feedback agent parses the report with Gemini, re-evaluates the fault node on the fly, adjusts the affected count from 75 to 15 homes, and highlights the correction to the operator.
@@ -165,7 +167,7 @@ GridMedic organizes decision-making into specialized Jac walkers and LLM-powered
 | Agent / Component | Jac Implementation | Mechanism & Role |
 |---|---|---|
 | **Complaint Parser** | `agents_parse.jac` | Deterministic regex for `BD <number>` SMS; batched `by llm()` (`Gemini 3.5 Flash-Lite`) with typed semantic contracts (`sem`) for English and Sinhala text. Caches parsed text by hash for instantaneous, zero-cost replays. |
-| **Localiser** | `grid.impl/localize.impl.jac` | Graph walker spawned once per complaint batch. Climbs upstream from complaining meters (`Home` $\to$ `Transformer` $\to$ `Section` $\to$ `Substation`); graph nodes execute abilities on walker entry to tally complaint densities. |
+| **Localiser** | `grid.impl/localize.impl.jac` | Graph walker spawned once per complaint batch. Climbs upstream from complaining meters (`Home` → `Transformer` → `Section` → `Substation`); graph nodes execute abilities on walker entry to tally complaint densities. |
 | **Fault Grouper** | `agents_group.jac` / `agents_group.impl.jac` | Evaluates downstream reporting ratios. Identifies medium-voltage section line snaps (`LINE_DOWN`), transformer fuse failures (`TX_FUSE`), and street-level low-voltage drops (`SERVICE_WIRE`), attaching plain-English evidence strings. |
 | **Prioritiser** | `agents_priority.jac` | Computes dynamic priority scores. Surfaces fallen conductors and sparks first, followed by essential facilities (hospital, water pumping stations, schools, police), affected consumer counts, and outage duration. |
 | **Energiser** | `grid.impl/energise.impl.jac` | Bidirectional flood-fill walker. Recomputes power status across sections, switches, transformers, and 600 homes in milliseconds whenever switches change state or repairs complete. |
@@ -225,7 +227,7 @@ Built for utility control engineers managing major outage events:
 * **Ranked Fault Cards with "Why?" Explanations:** Ranked list showing severity badges (⚠️ Hazard, 🏥 Hospital, 💧 Water Pump, 🏫 School, 👮 Police), affected headcounts, and confidence. Clicking **"Why?"** opens an AI-generated explanation detailing the exact evidence behind the diagnosis.
 * **Field Crew Tracking & Presets:** Shows crew assignments, travel statuses, and real-time ETAs. Includes quick-report presets to simulate live field updates (*"Preset: T9 Twist"*, *"Preset: Pole 23 Safe"*).
 * **Restoration Actions Panel:** Displays calculated tie-switch and microgrid restoration plans with safety validations. Unsafe plans are clearly tagged **BLOCKED** with explicit failure rationale; safe plans can be applied with a single click.
-* **Floating Simulation Controls:** Allows the operator to start the storm, adjust simulation speed ($1\times$, $5\times$, $20\times$), pause, and reset the environment.
+* **Floating Simulation Controls:** Allows the operator to start the storm, adjust simulation speed (1x, 5x, 20x), pause, and reset the environment.
 
 ### 2. Consumer Outage Portal (`/customer`)
 
@@ -257,7 +259,7 @@ The demo simulates a realistic severe weather incident on the fictional **Moratu
                     (T3-Hospital, T4)    (T8, T9, T10-Police)
                            |                   |
                          [SW2]                 |
-                           |                   |
+                            |                   |
                      [Section F1-C]            |
                       (T5-School)              |
                            \                   /
@@ -268,7 +270,7 @@ The demo simulates a realistic severe weather incident on the fictional **Moratu
 ### Network Topology & Facilities
 
 * **Substation:** SS1 Moratuwa Grid Substation.
-* **Feeders:** Two $11\text{ kV}$ radial feeders (Feeder 1: 310 homes; Feeder 2: 290 homes; Total: **600 consumers**).
+* **Feeders:** Two 11 kV radial feeders (Feeder 1: 310 homes; Feeder 2: 290 homes; Total: **600 consumers**).
 * **Line Sections & Switches:** 5 sections separated by auto-recloser `SW1`, load-break switch `SW2`, sectionaliser `SW3`, and normally-open tie switch `TS1`.
 * **10 Transformers:** T1 through T10 feeding named streets (Hospital Road, Lake Road, Bridge Road, etc.).
 * **5 Critical Facilities:**
@@ -298,7 +300,31 @@ When the operator clicks **Start Storm**, ~300 complaints flood in over a simula
 
 Section F1-C (Transformer T5, 70 homes) is dark due to the upstream fault on F1-B:
 1. **Unsafe Plan (Close TS1 directly):** Closing `TS1` while `SW2` is closed would backfeed high voltage into section F1-B where Crew A is actively working. GridMedic's `SafetyCheck` simulates this step, detects the live `work_zone`, and flags the plan **BLOCKED**.
-2. **Safe Plan (Open SW2, then Close TS1):** Isolates F1-B by opening `SW2` first, then closes `TS1` to backfeed F1-C from Feeder 2. The safety check verifies Feeder 2 capacity ($290 + 70 = 360 \le 700$), marks the action **SAFE**, and one click restores all 70 homes on T5.
+2. **Safe Plan (Open SW2, then Close TS1):** Isolates F1-B by opening `SW2` first, then closes `TS1` to backfeed F1-C from Feeder 2. The safety check verifies Feeder 2 capacity (290 + 70 = 360 ≤ 700 homes capacity), marks the action **SAFE**, and one click restores all 70 homes on T5.
+
+---
+
+## API Reference
+
+GridMedic exposes 14 reactive `walker:pub` endpoints served over HTTP POST (`http://localhost:8001/walker/<endpoint_name>`). Client UI components call these endpoints seamlessly via Jac's compiler-generated `sv import` bridge.
+
+| Endpoint | HTTP Type | Parameters | Returns | Description |
+|---|---|---|---|---|
+| `get_grid` | POST | None | `GridView` | Returns all active nodes, edges, states, and counters for single-line diagram rendering. |
+| `start_storm` | POST | `speed: int` | `Ack` | Initializes the storm scenario clock and loads the complaint queue at the specified speed (1x, 5x, 20x). |
+| `tick` | POST | `minutes: float` | `Ack` | Advances the simulated clock, releases due complaints, runs parsing, localizing, and crew movement. |
+| `submit_complaint` | POST | `text: str`, `consumer_no: str` | `Complaint` | Ingests a single customer outage report, parses hazards, and maps to the grid graph. |
+| `get_complaints` | POST | `since_min: float` | `list[Complaint]` | Streams incoming complaints in chronological arrival order. |
+| `get_faults` | POST | None | `list[Fault]` | Returns the current list of clustered faults, sorted by multi-factor priority score. |
+| `get_crews` | POST | None | `list[Crew]` | Returns all repair crews with their current depot, location, status, and assigned tasks. |
+| `get_tasks` | POST | None | `list[CrewTask]` | Lists active dispatches, destination coordinates, and estimated arrival times (ETAs). |
+| `crew_report` | POST | `crew_id: str`, `text: str` | `Fault` | Ingests unstructured field notes from a crew, triggering LLM re-evaluation of the fault node. |
+| `explain` | POST | `fault_id: str` | `Fault` | Generates a 2-sentence plain-English justification ("Why?") explaining root-cause diagnosis. |
+| `get_actions` | POST | None | `list[Action]` | Generates proposed tie-switch and microgrid restoration plans with automated safety proofs. |
+| `apply_action` | POST | `action_id: str` | `ActionResult` | Executes an approved restoration sequence, validates safety constraints, and updates power flow. |
+| `get_events` | POST | `since_min: float` | `list[Event]` | Returns a chronological log of system actions, mind-change events, arrivals, and switching operations. |
+| `get_status` | POST | `consumer_no: str` | `CustomerStatus` | Customer portal status lookup returning live power status, root cause description, and repair ETA. |
+| `reset` | POST | None | `Ack` | Restores normal grid topology, clears operational faults, and resets simulation state. |
 
 ---
 
@@ -307,7 +333,7 @@ Section F1-C (Transformer T5, 70 homes) is dark due to the upstream fault on F1-
 ### Prerequisites
 
 * **Operating System:** Windows, Linux, or macOS.
-* **Python:** Version $\ge 3.12$.
+* **Python:** Version >= 3.12.
 * **Google Gemini API Key:** Get a key from [Google AI Studio](https://aistudio.google.com/).
 
 ### 1. Installation
@@ -457,9 +483,9 @@ gridmedic/
 
 During the design and testing of GridMedic on a 600-home network, several performance characteristics of the Jac runtime were identified and solved:
 
-### 1. Graph Traversal Optimization ($80\times$ Speedup)
+### 1. Graph Traversal Optimization (80x Speedup)
 
-On our 620-node distribution topology, using high-level edge filters like `[n <-:Feeds:<-]` and `[n -->[?:GridNode]]` across inherited classes cost $\approx 12\text{ ms}$ per node evaluation. A single full traversal took **$8\text{ to }10\text{ seconds}$**, causing simulation ticks to take over a minute.
+On our 620-node distribution topology, using high-level edge filters like `[n <-:Feeds:<-]` and `[n -->[?:GridNode]]` across inherited classes cost ~12 ms per node evaluation. A single full traversal took **8 to 10 seconds**, causing simulation ticks to take over a minute.
 
 **The Solution:** We implemented lightweight traversal helpers in `grid.jac`:
 ```jac
@@ -471,13 +497,13 @@ def parents(n: GridNode) -> list[GridNode] {
     return [x for x in [n <--] if isinstance(x, GridNode) and not isinstance(x, Landmark)];
 }
 ```
-Walkers traverse via `visit children(here)` and `visit parents(here)`. Traversal time dropped from **$9.2\text{ s}$ to $0.13\text{ s}$** ($80\times$ faster).
+Walkers traverse via `visit children(here)` and `visit parents(here)`. Traversal time dropped from **9.2 s to 0.13 s** (80x faster).
 
 ### 2. Batch-Spawn Architecture
 
-Spawning a walker on a 600-node graph introduces $\approx 0.2\text{ s}$ of runtime overhead. Spawning a separate `Localiser` walker for each of the 300 incoming complaints individually would introduce 60 seconds of serialization stall.
+Spawning a walker on a 600-node graph introduces ~0.2 s of runtime overhead. Spawning a separate `Localiser` walker for each of the 300 incoming complaints individually would introduce 60 seconds of serialization stall.
 
-**The Solution:** The `Localiser` walker is spawned **once per simulation tick** with a list of all newly arrived complaint homes in `starts: list[GridNode]`. In benchmarks, **109 complaints are localized in just $0.4\text{ seconds}$**.
+**The Solution:** The `Localiser` walker is spawned **once per simulation tick** with a list of all newly arrived complaint homes in `starts: list[GridNode]`. In benchmarks, **109 complaints are localized in just 0.4 seconds**.
 
 ### 3. LLM Output Typing & Module Isolation
 
@@ -487,8 +513,8 @@ In `byllm` 0.6.19, `by llm()` functions returning object types imported across m
 
 ### 4. Quota Optimization via Deterministic Bypass & Hashing
 
-* **$50\%$ of complaints** are automated `BD <consumer_no>` SMS codes: parsed via pure regex in $0\text{ ms}$ without consuming LLM API quota.
-* Free-text complaints are processed in batches of $10$ per `by llm()` invocation.
+* **50% of complaints** are automated `BD <consumer_no>` SMS codes: parsed via pure regex in 0 ms without consuming LLM API quota.
+* Free-text complaints are processed in batches of 10 per `by llm()` invocation.
 * All parsed text is indexed in `ParseCache` by text hash. Replaying the simulation or running demos on recorded scenarios requires **zero additional LLM calls**.
 
 ---
@@ -498,7 +524,7 @@ In `byllm` 0.6.19, `by llm()` functions returning object types imported across m
 To transition GridMedic from a decision-support prototype into enterprise utility deployment (e.g., across the Ceylon Electricity Board or regional distribution utilities), the following operational extensions are planned:
 
 ### 1. Automated Real-Grid Ingestion (GIS & IEC CIM to Jac Graphs)
-* **GIS Asset Ingestion:** Automated converters to ingest utility Geographic Information System (GIS) datasets—including Esri Shapefiles, GeoJSON, and AutoCAD DXF—directly into Jac distribution graphs (`Substation` $\to$ `Section` $\to$ `Transformer` $\to$ `Home`), preserving exact geospatial coordinates and circuit configurations.
+* **GIS Asset Ingestion:** Automated converters to ingest utility Geographic Information System (GIS) datasets—including Esri Shapefiles, GeoJSON, and AutoCAD DXF—directly into Jac distribution graphs (`Substation` → `Section` → `Transformer` → `Home`), preserving exact geospatial coordinates and circuit configurations.
 * **IEC 61970/61968 CIM/XML Support:** Native ingestion of Common Information Model (CIM) standards widely used in electrical power systems, allowing utilities to export their network model directly into Jac graphs with zero manual topology authoring.
 * **Dynamic Network Reconfiguration:** Automatically reflect seasonal feeder changes, distributed solar (Rooftop PV) growth, and planned switch maintenance in the persistent graph.
 
@@ -543,3 +569,10 @@ To transition GridMedic from a decision-support prototype into enterprise utilit
 
 ### Acknowledgements
 Originally created for the **AI Hackathon 2026, powered by Jaseci Labs** at the Department of Electrical Engineering, University of Moratuwa.
+
+---
+
+## License
+
+This project is licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).
+
